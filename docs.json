@@ -52,7 +52,9 @@
               "guides/authentication",
               "guides/profile-management",
               "guides/collaboration",
-              "guides/notifications"
+              "guides/notifications",
+              "guides/preferences",
+              "guides/support"
             ]
           },
           {

@@ -280,16 +280,63 @@ CREATE INDEX idx_tarea_usuarios_tarea ON tarea_usuarios(tarea_id);
 CREATE INDEX idx_tarea_usuarios_usuario ON tarea_usuarios(usuario_id);
 ```
 
+### etiquetas (Tags)
+
+```sql
+CREATE TABLE etiquetas (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT UNIQUE NOT NULL,
+  color TEXT DEFAULT '#3B82F6',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+Tags allow you to categorize and label tasks for better organization. Each tag has a name and color for visual identification.
+
+### tarea_etiquetas (Task Tags Junction)
+
+```sql
+CREATE TABLE tarea_etiquetas (
+  tarea_id INTEGER REFERENCES tareas(id) ON DELETE CASCADE,
+  etiqueta_id INTEGER REFERENCES etiquetas(id) ON DELETE CASCADE,
+  PRIMARY KEY (tarea_id, etiqueta_id)
+);
+
+CREATE INDEX idx_tarea_etiquetas_tarea ON tarea_etiquetas(tarea_id);
+CREATE INDEX idx_tarea_etiquetas_etiqueta ON tarea_etiquetas(etiqueta_id);
+```
+
+This junction table creates a many-to-many relationship between tasks and tags, allowing each task to have multiple tags.
+
+### usuarios_borrados (Deleted Users Archive)
+
+```sql
+CREATE TABLE usuarios_borrados (
+  id SERIAL PRIMARY KEY,
+  original_id INTEGER,
+  auth_user_id UUID,
+  nombre_usuario TEXT,
+  nombre_completo TEXT,
+  correo TEXT,
+  deleted_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_by INTEGER REFERENCES usuarios(id)
+);
+```
+
+This table archives user data when users are deleted from the system, maintaining audit history and referential integrity.
+
 ## Realtime Subscriptions
 
 Enable realtime for live updates:
 
 ```sql
--- Enable realtime for usuarios table
+-- Enable realtime for all tables
 ALTER PUBLICATION supabase_realtime ADD TABLE usuarios;
 ALTER PUBLICATION supabase_realtime ADD TABLE tareas;
 ALTER PUBLICATION supabase_realtime ADD TABLE tarea_usuarios;
 ALTER PUBLICATION supabase_realtime ADD TABLE proyectos;
+ALTER PUBLICATION supabase_realtime ADD TABLE etiquetas;
+ALTER PUBLICATION supabase_realtime ADD TABLE tarea_etiquetas;
 ```
 
 The application uses Supabase Realtime in `app.realtime.js` to subscribe to table changes and update the UI automatically.

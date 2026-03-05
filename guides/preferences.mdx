@@ -1,0 +1,166 @@
+---
+title: "Preferences & Customization"
+description: "Customize your Hive experience with theme settings and personal preferences"
+---
+
+## Overview
+
+Hive allows you to personalize your workspace with various preferences and settings. These options help you create a comfortable and productive environment tailored to your working style.
+
+## Theme Settings
+
+### Light and Dark Mode
+
+Hive supports both light and dark themes to reduce eye strain and match your personal preference or working environment.
+
+<Steps>
+  <Step title="Locate the theme toggle">
+    Find the theme toggle button in the sidebar footer, below your user avatar.
+  </Step>
+  <Step title="Switch themes">
+    Click the theme toggle button to switch between light and dark mode:
+    - **☀️ Modo claro** - Switch to light mode
+    - **🌙 Modo oscuro** - Switch to dark mode
+  </Step>
+  <Step title="Theme persists">
+    Your theme selection is automatically saved and will be applied every time you return to Hive.
+  </Step>
+</Steps>
+
+<Info>
+Hive remembers your theme preference using browser `localStorage`, so you don't need to change it every time you log in.
+</Info>
+
+### Theme Behavior
+
+The theme system works intelligently:
+
+1. **Manual selection** - Your explicit choice (light or dark) is always respected
+2. **System preference fallback** - On first visit, Hive detects your operating system's theme preference
+3. **Persistent across sessions** - The theme stays the same even after logout and login
+
+```javascript
+// Theme is stored in localStorage
+localStorage.setItem('pmh-theme', 'dark'); // or 'light'
+
+// Theme is applied to document root
+document.documentElement.classList.toggle('theme-dark', isDark);
+document.documentElement.setAttribute('data-theme', theme);
+```
+
+### What Changes with Dark Mode
+
+When you enable dark mode:
+
+<CardGroup cols={2}>
+  <Card title="UI Colors" icon="palette">
+    Background, text, and border colors invert for reduced brightness
+  </Card>
+  <Card title="Charts" icon="chart-line">
+    Dashboard charts update their legend colors to match the theme
+  </Card>
+  <Card title="Task Filters" icon="filter">
+    Filter buttons and task cards adjust their color scheme
+  </Card>
+  <Card title="Cards & Panels" icon="window">
+    Project cards, task panels, and modals update their appearance
+  </Card>
+</CardGroup>
+
+<Tip>
+Dark mode is especially helpful when working in low-light environments or during extended work sessions to reduce eye strain.
+</Tip>
+
+## Sidebar Preferences
+
+### Collapsible Sidebar
+
+The sidebar can be toggled to give you more screen space when needed:
+
+1. Click the **hamburger menu icon** (three horizontal lines) to collapse or expand the sidebar
+2. The sidebar state persists across page refreshes
+3. All navigation options remain accessible in collapsed mode
+
+<Note>
+The sidebar toggle uses a smooth animation for a better user experience. The button transforms from three lines to an X when the sidebar is open.
+</Note>
+
+## Display Preferences
+
+### Expanded Projects
+
+When viewing the Projects screen, you can expand or collapse individual projects:
+
+- **Expanded projects** are remembered in `localStorage`
+- Your expansion state is restored when you return to the Projects view
+- This helps you focus on the projects you're actively working on
+
+### Task Area Opacity
+
+When creating or editing projects, you can adjust the **Task Area Opacity** slider:
+
+- Controls the transparency of the task display area within each project
+- Values range from 0% (fully transparent) to 100% (fully opaque)
+- Helps with visual hierarchy and readability
+
+## Language and Localization
+
+Currently, Hive is available in Spanish:
+
+- UI labels and buttons are in Spanish (e.g., "Nuevo Proyecto", "Tareas", "Dashboard")
+- Date formats follow the ISO standard (YYYY-MM-DD)
+- Time zones are handled in UTC for consistency across teams
+
+<Info>
+Future versions of Hive may include additional language options and locale-specific formatting.
+</Info>
+
+## Accessibility Features
+
+Hive includes several accessibility considerations:
+
+- **Keyboard navigation** - Tab through interactive elements
+- **ARIA labels** - Screen reader support for buttons and controls
+- **Focus indicators** - Clear visual feedback for keyboard users
+- **Semantic HTML** - Proper heading hierarchy and landmark regions
+
+## Preference Storage
+
+All your preferences are stored locally in your browser:
+
+| Preference | Storage Key | Description |
+|------------|-------------|-------------|
+| Theme | `pmh-theme` | Light or dark mode selection |
+| Expanded Projects | `pmh-expandedProjects` | Which projects are currently expanded |
+| Session Data | `supabaseSession` | Authentication session (secure) |
+| User Profile | `supabaseUserProfile` | Cached profile data |
+
+<Warning>
+Clearing your browser data or cookies will reset your preferences to default values. You'll need to reconfigure your theme and other settings.
+</Warning>
+
+## System Recommendations
+
+For the best Hive experience:
+
+- **Modern browser** - Use the latest version of Chrome, Firefox, Safari, or Edge
+- **JavaScript enabled** - Hive requires JavaScript for all functionality
+- **Cookies and localStorage** - Allow these for session management and preference storage
+- **Screen resolution** - Minimum 1024x768, recommended 1920x1080 or higher
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Profile Management" icon="user" href="/guides/profile-management">
+    Customize your user profile and avatar
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="/features/dashboard">
+    Learn how charts adapt to your theme
+  </Card>
+  <Card title="Notifications" icon="bell" href="/guides/notifications">
+    Configure notification preferences
+  </Card>
+  <Card title="Authentication" icon="lock" href="/guides/authentication">
+    Understand session management
+  </Card>
+</CardGroup>
