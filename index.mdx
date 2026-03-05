@@ -1,97 +1,112 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Welcome to Hive"
+description: "A collaborative project management platform for teams to organize projects, tasks, and team members with real-time updates"
 ---
 
-## Setting up
+<div style={{
+  background: 'linear-gradient(135deg, #e9f7f6 0%, #ffffff 100%)',
+  borderRadius: '8px',
+  padding: '48px 32px',
+  marginBottom: '32px',
+  border: '1px solid rgba(0, 0, 0, 0.1)',
+  boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)'
+}}>
+  <h1 style={{
+    fontSize: '36px',
+    fontWeight: '700',
+    color: '#1c9a54',
+    marginBottom: '16px',
+    fontFamily: 'Inter, sans-serif'
+  }}>Organize Your Team's Work with Hive</h1>
+  <p style={{
+    fontSize: '18px',
+    color: '#1a1a1a',
+    marginBottom: '24px',
+    fontFamily: 'Inter, sans-serif'
+  }}>
+    Manage projects, track tasks, and collaborate with your team in real-time. Hive brings everything together in one powerful platform.
+  </p>
+  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+    <a href="/quickstart" style={{
+      background: '#0a1c23',
+      color: '#e6f7f7',
+      padding: '12px 24px',
+      borderRadius: '4px',
+      textDecoration: 'none',
+      fontWeight: '600',
+      fontFamily: 'Inter, sans-serif',
+      display: 'inline-block'
+    }}>Get Started</a>
+    <a href="/features/projects" style={{
+      background: 'transparent',
+      color: '#0a1c23',
+      padding: '12px 24px',
+      borderRadius: '4px',
+      textDecoration: 'none',
+      fontWeight: '600',
+      fontFamily: 'Inter, sans-serif',
+      border: '1px solid #0a1c23',
+      display: 'inline-block'
+    }}>Explore Features</a>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Powerful tools to help your team stay organized and productive.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Project Management" icon="folder-tree" href="/features/projects">
+    Organize work into projects with customizable workflows and milestones
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Task Tracking" icon="list-check" href="/features/tasks">
+    Create, assign, and track tasks with due dates and priorities
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Team Collaboration" icon="users" href="/features/people">
+    Manage team members, roles, and permissions in one place
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Real-time Dashboard" icon="chart-line" href="/features/dashboard">
+    Visualize progress with charts, analytics, and workload tracking
   </Card>
-</Columns>
+  <Card title="Calendar View" icon="calendar" href="/features/calendar">
+    See all tasks and deadlines in an intuitive calendar interface
+  </Card>
+  <Card title="User Profiles" icon="user-circle" href="/guides/profile-management">
+    Customize profiles with photos, contact info, and preferences
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Get Started in Minutes
 
-Everything you need to create world-class documentation.
+Follow these steps to start using Hive with your team.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up your account and create your first project
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Installation" icon="download" href="/installation">
+    Deploy Hive on your own infrastructure
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Authentication" icon="lock" href="/guides/authentication">
+    Learn how user authentication and access control works
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Developer Resources
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+Extend and integrate Hive with your existing tools.
+
+<CardGroup cols={2}>
+  <Card title="API Overview" icon="code" href="/api/overview">
+    Learn about the Hive API and available endpoints
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/environment">
+    Configure environment variables and deployment settings
+  </Card>
+  <Card title="Supabase Setup" icon="database" href="/configuration/supabase">
+    Set up authentication and database with Supabase
+  </Card>
+  <Card title="Deployment Guide" icon="cloud" href="/configuration/deployment">
+    Deploy to Vercel, AWS, or your own servers
+  </Card>
+</CardGroup>

@@ -1,0 +1,367 @@
+---
+title: "Collaboration"
+description: "Work together with your team using shared projects, task assignments, real-time updates, and team communication"
+---
+
+## Overview
+
+Hive is built for team collaboration. Share projects, assign tasks, communicate through comments, and see updates in real-time as your team works together.
+
+## Sharing Projects with Team Members
+
+### Project Access
+
+Projects in Hive are shared with your entire organization by default. All team members can:
+- View all projects in the **Projects** view
+- See tasks assigned to the project
+- Track progress and deadlines
+- Collaborate on shared goals
+
+<Info>
+Project visibility is organization-wide. There are no private projects - this encourages transparency and team alignment.
+</Info>
+
+### Project Organization
+
+Projects help organize work by:
+- **Department** - Marketing, Engineering, Sales, etc.
+- **Initiative** - Product launches, campaigns, quarterly goals
+- **Client** - Client-specific deliverables and milestones
+- **Timeline** - Time-bound projects with start and end dates
+
+Each project contains:
+- Tasks organized by status (Pending, In Progress, Completed)
+- Progress tracking (percentage complete)
+- Due dates and milestones
+- Assigned team members
+
+## Task Assignment and Notifications
+
+### Assigning Tasks to Team Members
+
+<Steps>
+  <Step title="Open task details">
+    Click on any task to open the task modal with full details.
+  </Step>
+  <Step title="Select assignees">
+    Use the **Assign User** dropdown to select team members.
+    - Search by name or username
+    - Assign multiple people to one task
+    - See existing assignees with their avatars
+  </Step>
+  <Step title="Save assignment">
+    Click **Add** to assign the selected user. The assignment is saved to the `tarea_usuarios` table.
+  </Step>
+</Steps>
+
+<Tip>
+You can assign multiple team members to a single task for collaborative work. All assigned users will receive notifications about task updates.
+</Tip>
+
+### Assignment Permissions
+
+Task assignment follows these rules:
+- **Administrators** can assign any user to any task
+- **Regular users** can assign themselves to tasks
+- **Task owners** can modify assignments on their tasks
+
+The system validates permissions before allowing assignments:
+
+```javascript
+// Permission check before assignment
+const isAdmin = user.rol === 'administrador';
+const isAssigned = isUserAssignedToTask(taskId, userId);
+
+if (!isAdmin && !isAssigned) {
+  pmhAlert('Solo administradores pueden asignar usuarios', 'warning');
+  return;
+}
+```
+
+### Viewing Your Assignments
+
+See tasks assigned to you in:
+
+1. **Dashboard** - Your personal task list shows all assignments
+2. **Calendar** - Visualize your deadlines and due dates
+3. **Tasks** - Filter by "Assigned to me" to focus on your work
+4. **People view** - See your workload alongside team members
+
+## Real-time Updates
+
+### Live Collaboration
+
+Hive uses Supabase Realtime to sync changes instantly across all connected users:
+
+<CardGroup cols={2}>
+  <Card title="Task Updates" icon="list-check">
+    See task status, progress, and assignments update live as team members make changes.
+  </Card>
+  <Card title="Project Changes" icon="folder-tree">
+    Project details, deadlines, and task counts sync automatically.
+  </Card>
+  <Card title="User Activity" icon="users">
+    See who's online and when team members were last active.
+  </Card>
+  <Card title="Tag & Label Changes" icon="tags">
+    Tag assignments and updates appear instantly on task cards.
+  </Card>
+</CardGroup>
+
+### How Real-time Works
+
+The platform subscribes to database changes through Supabase Realtime channels:
+
+```javascript
+// Real-time subscription for tasks
+const channel = supabase.channel('rt-pmh-tareas-global')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'tareas'
+  }, (payload) => {
+    // Update UI when tasks change
+    refreshTaskData(payload.new.id);
+  })
+  .subscribe();
+```
+
+**Events tracked in real-time:**
+- Task creation, updates, and deletion
+- User assignments (`tarea_usuarios` table)
+- Tag assignments (`tarea_etiquetas` table)
+- Project modifications
+- User presence and status
+
+### Real-time Indicators
+
+When changes happen:
+
+1. **Toast notifications** appear briefly ("Tarea actualizada")
+2. **Task cards update** their content without page refresh
+3. **Progress bars** animate to new percentages
+4. **Counters** update to reflect new task counts
+
+<Info>
+Real-time updates are throttled to prevent notification spam. You won't see notifications for your own changes, only updates from other team members.
+</Info>
+
+### Conflict Prevention
+
+Hive prevents edit conflicts through:
+
+- **Optimistic UI updates** - Your changes appear immediately
+- **Local muting** - Your own edits don't trigger notifications back to you
+- **Debounced syncing** - Rapid changes are batched to reduce network traffic
+- **Last-write-wins** - The most recent update takes precedence
+
+```javascript
+// Mute local changes to avoid feedback loops
+markLocalTaskTouched(taskId, 1000);
+
+if (isTaskMuted(taskId)) {
+  // Ignore realtime event for tasks you just modified
+  return;
+}
+```
+
+## Comments and Communication
+
+### Task Comments
+
+While the current codebase focuses on structured task data, team communication happens through:
+
+1. **Task Descriptions** - Detailed descriptions provide context for assignees
+2. **Status Updates** - Changing task status signals progress to the team
+3. **Progress Updates** - Updating percentage complete shows active work
+4. **Assignment Changes** - Adding/removing assignees notifies team members
+
+<Note>
+Direct commenting features may be added in future versions. For now, use task descriptions and external communication tools for detailed discussions.
+</Note>
+
+### Description Field
+
+The `descripcion` field on tasks serves as the primary communication space:
+- Provide detailed instructions
+- Document requirements
+- Share links and resources
+- Note blockers or dependencies
+
+Best practices for task descriptions:
+- **Be specific** - Include acceptance criteria
+- **Add context** - Explain why the task matters
+- **Link resources** - Include relevant URLs or document links
+- **Update regularly** - Keep descriptions current as work progresses
+
+## @Mentions and Notifications
+
+### Assignment Notifications
+
+When you're assigned to a task, you're notified through:
+
+1. **In-app alerts** - Toast notifications appear in the UI
+2. **Email notifications** (if configured) - Receive emails for new assignments
+3. **Dashboard updates** - New tasks appear in your personal task list
+
+<Tip>
+Check your **Dashboard** daily to see new assignments and upcoming deadlines.
+</Tip>
+
+### Activity Notifications
+
+You'll receive notifications when:
+- Someone assigns you to a task
+- A task you're assigned to is updated (status, priority, deadline)
+- A project you're working on changes
+- A task you created is completed
+
+### Managing Notification Frequency
+
+Notification behavior is controlled by:
+
+- **Real-time subscriptions** - Active when you're using the app
+- **Email settings** - Configured in Supabase Auth settings
+- **Toast throttling** - Prevents notification spam (1.5s minimum between toasts)
+
+See the [Notifications guide](/guides/notifications) for detailed notification settings.
+
+## Team Coordination Features
+
+### Drag and Drop Task Assignment
+
+In the **Projects** view, you can reorganize tasks:
+
+<Steps>
+  <Step title="Click and hold">
+    Click and hold any task card to start dragging.
+  </Step>
+  <Step title="Drag to project">
+    Drag the task to a different project column to reassign it.
+  </Step>
+  <Step title="Drop to confirm">
+    Release to update the task's project assignment.
+  </Step>
+</Steps>
+
+Drag-and-drop features:
+- Visual feedback (card follows cursor)
+- Drop zone highlighting
+- Permission checks (admin-only by default)
+- Real-time sync to other users
+- Conflict prevention (drop locks)
+
+```javascript
+// Drag-and-drop handler with permissions
+const isAdmin = user.rol === 'administrador';
+if (!isAdmin) {
+  alert('No tiene suficientes privilegios para mover tareas');
+  return;
+}
+
+await handleTaskDrop(containerEl, projectId, taskId);
+```
+
+### User Presence Tracking
+
+See who's actively working:
+
+- **Online indicators** - Green dot next to active users
+- **Last seen timestamps** - "Last active 5 minutes ago"
+- **Presence state** - Tracked via `presence_state` field in `usuarios`
+
+Presence updates happen:
+- On login/logout
+- Periodically while active (background pings)
+- Through real-time presence channels
+
+### Team Workload View
+
+The **People** view shows team workload:
+
+- **Task count per person** - See who's busy or available
+- **Active assignments** - Tasks currently in progress
+- **Completion rates** - Track individual productivity
+- **Avatar grids** - Visual representation of team members on tasks
+
+<Info>
+Use the People view to identify overloaded team members and redistribute work for better balance.
+</Info>
+
+## Best Practices for Collaboration
+
+<CardGroup cols={2}>
+  <Card title="Clear task titles" icon="heading">
+    Use descriptive titles so team members understand tasks at a glance.
+  </Card>
+  <Card title="Set realistic deadlines" icon="calendar-days">
+    Give assignees enough time to complete work without rushing.
+  </Card>
+  <Card title="Update progress regularly" icon="chart-line">
+    Keep the percentage complete current so the team knows task status.
+  </Card>
+  <Card title="Use tags effectively" icon="tags">
+    Tag tasks by type, priority, or category for better organization.
+  </Card>
+  <Card title="Assign thoughtfully" icon="user-plus">
+    Only assign team members who need to be involved - avoid over-assignment.
+  </Card>
+  <Card title="Check your dashboard daily" icon="gauge-high">
+    Stay on top of new assignments and approaching deadlines.
+  </Card>
+</CardGroup>
+
+## Collaboration Workflows
+
+### Project Kickoff
+
+<Steps>
+  <Step title="Create project">
+    Admin creates a new project with start/end dates.
+  </Step>
+  <Step title="Break down work">
+    Create tasks for all deliverables and milestones.
+  </Step>
+  <Step title="Assign team members">
+    Distribute tasks based on expertise and availability.
+  </Step>
+  <Step title="Set priorities">
+    Mark critical-path tasks as high priority.
+  </Step>
+  <Step title="Track progress">
+    Team members update progress as they work.
+  </Step>
+</Steps>
+
+### Daily Standup Flow
+
+1. **Open Dashboard** - See your task list for today
+2. **Update progress** - Mark tasks as in-progress or complete
+3. **Check blocked items** - Identify tasks needing help
+4. **Review team status** - Check People view for team progress
+5. **Adjust assignments** - Redistribute work if needed
+
+### Sprint Planning
+
+1. **Review backlog** - Look at pending tasks across projects
+2. **Set sprint dates** - Define sprint start and end
+3. **Assign sprint tasks** - Allocate tasks to team members
+4. **Tag sprint items** - Create a "Sprint X" tag for tracking
+5. **Monitor daily** - Use Calendar and Dashboard views
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Projects" icon="folder-tree" href="/features/projects">
+    Learn about project structure and organization
+  </Card>
+  <Card title="Tasks" icon="list-check" href="/features/tasks">
+    Understand task management and workflows
+  </Card>
+  <Card title="People" icon="users" href="/features/people">
+    Manage team members and view workloads
+  </Card>
+  <Card title="Notifications" icon="bell" href="/guides/notifications">
+    Configure alerts and notification preferences
+  </Card>
+</CardGroup>

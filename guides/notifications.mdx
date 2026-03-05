@@ -1,0 +1,402 @@
+---
+title: "Notifications"
+description: "Stay informed with in-app alerts, email notifications, and real-time updates in Hive"
+---
+
+## Overview
+
+Hive keeps you informed about important events through a multi-layered notification system including in-app alerts, toast notifications, and optional email delivery.
+
+## Types of Notifications
+
+### In-App Alerts (Toast Notifications)
+
+Hive uses a custom alert system called `pmhAlert` that displays non-blocking notifications:
+
+<CardGroup cols={2}>
+  <Card title="Success" icon="circle-check" color="#10b981">
+    Green alerts for successful operations like "Tarea creada exitosamente"
+  </Card>
+  <Card title="Info" icon="circle-info" color="#3b82f6">
+    Blue alerts for informational messages like "Tarea actualizada"
+  </Card>
+  <Card title="Warning" icon="triangle-exclamation" color="#f59e0b">
+    Orange alerts for warnings like "Complete todos los campos requeridos"
+  </Card>
+  <Card title="Error" icon="circle-xmark" color="#ef4444">
+    Red alerts for errors like "Error de conexión"
+  </Card>
+</CardGroup>
+
+### Alert Behavior
+
+Toast notifications appear at the top-center of the screen and:
+
+- **Auto-dismiss** after 4.2 seconds (customizable duration)
+- **Stack in a queue** if multiple alerts trigger at once (max 5 queued)
+- **Show progress bar** indicating time until auto-dismiss
+- **Can be dismissed** by clicking the **✕** button or clicking outside
+- **High z-index** (20001) ensures they appear above modals and other content
+
+```javascript
+// Display a notification
+pmhAlert('Task updated successfully', 'success', 3000);
+
+// Different notification types
+pmhAlert('Warning: Check your input', 'warning');
+pmhAlert('Error occurred', 'error', 5000);
+pmhAlert('Information message', 'info');
+```
+
+### Alert Container
+
+Alerts are rendered in a dedicated container (`#pmhAlerts`) that:
+- Lives at the top of the page (fixed position)
+- Centers horizontally (`left: 50%, transform: translateX(-50%)`)
+- Sits above all other content (`z-index: 13001+`)
+- Handles queuing and animations automatically
+
+<Info>
+The alert system is implemented in `app.ui-utilities.js` and provides a better UX than native `alert()` dialogs.
+</Info>
+
+## Notification Settings and Preferences
+
+### Real-time Notification Control
+
+Real-time notifications are controlled by:
+
+```javascript
+// Enable/disable real-time updates globally
+window.PMH_ENABLE_REALTIME = true; // default: enabled
+```
+
+When enabled, you receive live notifications for:
+- **Task updates** - Status, progress, assignments
+- **Project changes** - New tasks, project modifications
+- **User assignments** - When you're added to or removed from tasks
+- **Tag updates** - Label changes on tasks
+
+### Notification Throttling
+
+To prevent notification spam, Hive implements intelligent throttling:
+
+- **Per-task throttle**: Max one notification per task every 1.5 seconds
+- **Global queue**: Maximum 5 notifications in queue at once
+- **Local muting**: Your own changes don't trigger notifications back to you
+- **Debounced updates**: Rapid changes are batched together
+
+```javascript
+// Throttling prevents notification spam
+const last = __rtToastTimes.get(taskId) || 0;
+const now = Date.now();
+
+if (now - last < 1500) {
+  return; // Skip notification if too soon
+}
+
+__rtToastTimes.set(taskId, now);
+createToast(`${taskTitle} actualizada`, 'info', 1600);
+```
+
+### Silent Mode (Local Changes)
+
+When you make changes, Hive temporarily mutes notifications for those items:
+
+1. You update a task's progress to 50%
+2. The system marks that task as "locally touched" for 1 second
+3. Real-time updates for that task are ignored during the mute period
+4. This prevents you from seeing "Task updated" for your own changes
+
+<Tip>
+Local muting ensures you only see notifications for changes made by other team members, not your own edits.
+</Tip>
+
+## Email Notifications
+
+### Email Configuration
+
+Email notifications are managed through Supabase Auth settings:
+
+- **Account creation** - Welcome email when user is created
+- **Password reset** - Secure link to reset forgotten passwords
+- **Email verification** - Confirm email address changes
+- **Assignment notifications** - Optional emails for task assignments
+
+<Warning>
+Email notifications require proper SMTP configuration in your Supabase project. Contact your administrator to set up email delivery.
+</Warning>
+
+### Customizing Email Templates
+
+Administrators can customize email templates in the Supabase dashboard:
+
+1. Go to **Authentication** > **Email Templates**
+2. Edit templates for:
+   - Confirmation emails
+   - Password reset
+   - Magic link login
+   - Email change confirmation
+3. Use template variables like `{{ .ConfirmationURL }}` and `{{ .Email }}`
+
+### Email Delivery
+
+Emails are sent through:
+- **Supabase built-in SMTP** (for development)
+- **Custom SMTP provider** (for production - SendGrid, Mailgun, etc.)
+- **Transactional email service** (recommended for reliability)
+
+## In-App Alerts (Container-based)
+
+### Alert Manager System
+
+The `AlertManager` class handles notification queuing and display:
+
+```javascript
+class AlertManager {
+  constructor(root) {
+    this.root = root;        // #pmhAlerts container
+    this.queue = [];         // Queued notifications
+    this.current = null;     // Currently displayed alert
+    this.maxQueued = 5;      // Maximum queue size
+  }
+
+  show(opts) {
+    // opts: { message, variant, duration }
+    this.queue.push(opts);
+    this._dequeue();
+  }
+}
+```
+
+### Alert Lifecycle
+
+<Steps>
+  <Step title="Alert is triggered">
+    Code calls `pmhAlert(message, variant, duration)`
+  </Step>
+  <Step title="Added to queue">
+    Alert is added to the queue (or replaces oldest if queue is full)
+  </Step>
+  <Step title="Rendered to DOM">
+    Alert element is created and appended to `#pmhAlerts`
+  </Step>
+  <Step title="Animation in">
+    CSS class `pmh-show` is added for fade-in animation
+  </Step>
+  <Step title="Progress bar">
+    Progress bar animates from 0% to 100% over the duration
+  </Step>
+  <Step title="Auto-dismiss or manual close">
+    After duration expires or user clicks close, `pmh-hide` class triggers fade-out
+  </Step>
+  <Step title="Cleanup">
+    Element is removed from DOM, next alert in queue is shown
+  </Step>
+</Steps>
+
+### Dismissing Alerts
+
+Users can dismiss alerts by:
+
+- **Clicking the ✕ button** in the top-right of the alert
+- **Clicking anywhere outside** the alert box
+- **Waiting for auto-dismiss** (default 4.2 seconds)
+
+Dismissing an alert immediately shows the next queued notification (if any).
+
+## Managing Notification Frequency
+
+### Reducing Alert Noise
+
+If you find notifications distracting:
+
+1. **Focus mode**: Close the Hive tab and check updates periodically
+2. **Disable real-time**: Set `window.PMH_ENABLE_REALTIME = false` in console
+3. **Mute during deep work**: Use browser notification controls
+4. **Check Dashboard instead**: Review updates on your schedule
+
+<Note>
+Disabling real-time updates means you won't see changes until you refresh the page. This may affect collaboration workflows.
+</Note>
+
+### Notification Events
+
+You receive notifications for:
+
+| Event | Notification Example | Variant |
+|-------|---------------------|----------|
+| Task created | "Tarea creada exitosamente" | success |
+| Task updated | "Tarea actualizada" | info |
+| Task deleted | "Tarea eliminada exitosamente" | success |
+| Task assigned | "Tarea asignada" | info |
+| Project created | "Proyecto creado exitosamente" | success |
+| Tag added | "Etiqueta creada exitosamente" | success |
+| Validation error | "Complete todos los campos requeridos" | warning |
+| Permission denied | "Solo administradores pueden..." | warning |
+| Network error | "Error de conexión" | error |
+| Upload success | "Imagen subida" | success |
+
+### Real-time Update Toasts
+
+When other users make changes, you see brief info toasts:
+
+- **Task title** is shown: "Design Homepage actualizada"
+- **Duration**: 1.6 seconds (brief, non-intrusive)
+- **Only when relevant**: Only for tasks in your current view
+- **Throttled**: Max one per task every 1.5 seconds
+
+```javascript
+// Real-time toast notification
+function maybeToastRealtime(taskId) {
+  if (isTaskMuted(taskId)) return;
+  
+  // Only show if Tasks or Projects view is active
+  const isVisible = isTasksScreenActive() || isProjectsScreenActive();
+  if (!isVisible) return;
+
+  const task = tasks.find(t => t.id === taskId);
+  const title = task?.titulo || 'Tarea';
+  
+  createToast(`${title} actualizada`, 'info', 1600);
+}
+```
+
+## Advanced Notification Features
+
+### Native Alert Override
+
+Hive optionally overrides the native browser `alert()` function:
+
+```javascript
+// Native alert is replaced with pmhAlert
+const nativeAlert = window.alert.bind(window);
+window.alert = function(message) {
+  try {
+    pmhAlert(message, 'info', 3200);
+  } catch(e) {
+    // Fallback to native alert if custom system fails
+    nativeAlert(message);
+  }
+};
+```
+
+This provides a better UX by:
+- Not blocking the UI (modals block all interaction)
+- Showing styled, branded alerts
+- Auto-dismissing after a timeout
+- Queuing multiple alerts gracefully
+
+### Programmatic Alert Helpers
+
+Pre-configured alert functions for common scenarios:
+
+```javascript
+// Success alerts
+pmhAlertLoginSuccess();  // "Login satisfactorio"
+pmhAlertLogout();        // "Logout correcto"
+
+// Validation alerts
+pmhAlertValidation('Check your inputs');
+
+// Error alerts
+pmhAlertError('Operation failed');
+```
+
+### Custom Alert Durations
+
+Adjust alert duration based on message importance:
+
+```javascript
+// Quick info (2 seconds)
+pmhAlert('Saved', 'success', 2000);
+
+// Standard (4.2 seconds - default)
+pmhAlert('Task created');
+
+// Important message (7 seconds)
+pmhAlert('Important: Review before submitting', 'warning', 7000);
+
+// Error requiring action (10 seconds)
+pmhAlert('Connection lost. Check your network.', 'error', 10000);
+```
+
+## Troubleshooting Notifications
+
+### Alerts not appearing
+
+<AccordionGroup>
+  <Accordion title="Check alert container exists">
+    Open DevTools and verify `#pmhAlerts` exists in the DOM. It should be a direct child of `<body>`.
+  </Accordion>
+  <Accordion title="Check z-index conflicts">
+    Ensure no other elements have `z-index` higher than 13001 that could cover alerts.
+  </Accordion>
+  <Accordion title="Check JavaScript errors">
+    Open browser console and look for errors that might prevent the alert manager from initializing.
+  </Accordion>
+</AccordionGroup>
+
+### Real-time notifications delayed
+
+- **Check internet connection** - Real-time requires active connection
+- **Verify Supabase Realtime is enabled** - Check project settings
+- **Look for console errors** - Subscription errors will appear in console
+- **Confirm `PMH_ENABLE_REALTIME = true`** - Real-time might be disabled
+
+### Too many notifications
+
+- **Increase throttle duration** - Edit `__rtToastTimes` threshold in code
+- **Reduce queue size** - Change `maxQueued` from 5 to a lower number
+- **Filter by view** - Notifications only show for active screens
+
+### Email notifications not sending
+
+<Steps>
+  <Step title="Verify SMTP configuration">
+    Check Supabase project settings for SMTP provider setup.
+  </Step>
+  <Step title="Check email templates">
+    Ensure email templates are configured and enabled.
+  </Step>
+  <Step title="Test with auth operations">
+    Trigger a password reset to test email delivery.
+  </Step>
+  <Step title="Check spam folder">
+    Hive emails might be filtered as spam initially.
+  </Step>
+</Steps>
+
+## Notification Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep messages concise" icon="message">
+    Alert text should be brief and actionable - users only see it for a few seconds.
+  </Card>
+  <Card title="Use appropriate variants" icon="palette">
+    Match the alert type to the message: success for confirmations, error for failures.
+  </Card>
+  <Card title="Avoid notification spam" icon="ban">
+    Don't trigger alerts for every minor action - save them for meaningful events.
+  </Card>
+  <Card title="Provide context" icon="circle-info">
+    Include enough detail that users know what happened and what to do next.
+  </Card>
+</CardGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Collaboration" icon="users" href="/guides/collaboration">
+    Learn about team communication and real-time updates
+  </Card>
+  <Card title="Profile Management" icon="user" href="/guides/profile-management">
+    Configure your user profile and contact preferences
+  </Card>
+  <Card title="Real-time Features" icon="bolt" href="/features/dashboard">
+    Understand how real-time synchronization works
+  </Card>
+  <Card title="Tasks" icon="list-check" href="/features/tasks">
+    Task notifications and assignment alerts
+  </Card>
+</CardGroup>

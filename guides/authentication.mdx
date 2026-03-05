@@ -1,0 +1,198 @@
+---
+title: "Authentication"
+description: "Learn how to log in, manage your session, and understand Hive's authentication system"
+---
+
+## Overview
+
+Hive uses Supabase for secure authentication, providing both email and username-based login options. The platform automatically manages your session and keeps you logged in across browser sessions.
+
+## Logging In
+
+### Username or Email Login
+
+Hive supports two login methods:
+
+1. **Email and Password** - Use your registered email address
+2. **Username and Password** - Use your username (stored as `nombre_usuario`)
+
+Both methods provide the same level of access and security.
+
+<Steps>
+  <Step title="Navigate to login page">
+    Access the Hive login page at your organization's URL.
+  </Step>
+  <Step title="Enter credentials">
+    Enter either your username or email address, along with your password.
+  </Step>
+  <Step title="Submit">
+    Click **Login** to authenticate. The system will validate your credentials and create a session.
+  </Step>
+</Steps>
+
+<Info>
+If you enter invalid credentials, you'll see an error message. Make sure your username/email and password are correct.
+</Info>
+
+## Session Management
+
+### How Sessions Work
+
+When you log in successfully, Hive creates an authenticated session that:
+
+- **Persists across page refreshes** - Your session is stored in `localStorage`
+- **Auto-restores on return** - When you return to Hive, your session is automatically restored
+- **Includes user metadata** - Your profile data is cached locally for fast access
+
+The authentication system uses Supabase's `auth.getSession()` to restore your session from secure storage.
+
+```javascript
+// Session restoration happens automatically on page load
+const { data: { session }, error } = await supabase.auth.getSession();
+if (session) {
+  window.currentUser = session.user;
+}
+```
+
+### Session State Monitoring
+
+Hive monitors authentication state changes in real-time. If your session expires or you log out in another tab, the system will detect it and prompt you to log in again.
+
+<Tip>
+The platform includes an `ensureAuthenticated()` function that checks your session before sensitive operations, ensuring you're always properly authenticated.
+</Tip>
+
+## Password Requirements
+
+When creating your account or changing your password, Hive enforces security standards:
+
+- **Minimum length**: Passwords must meet Supabase's minimum requirements
+- **Secure storage**: Passwords are hashed and never stored in plain text
+- **Protected transmission**: All authentication happens over HTTPS
+
+<Warning>
+Never share your password with anyone. Hive administrators will never ask for your password.
+</Warning>
+
+## User Data Storage
+
+After successful login, Hive stores your user information in two places:
+
+1. **`localStorage.user`** - Basic authentication data from Supabase Auth
+2. **`localStorage.fullUser`** - Complete user profile from the `usuarios` table, including:
+   - `nombre_usuario` - Your username
+   - `nombre_completo` - Full name
+   - `correo` - Email address
+   - `cedula` - ID number
+   - `puesto` - Job title
+   - `rol` - User role (administrador, usuario, etc.)
+   - `foto_url` - Profile photo path
+
+## Logging Out
+
+### Manual Logout
+
+To end your session:
+
+1. Click your profile menu in the navigation bar
+2. Select **Logout**
+3. Your session will be cleared and you'll be redirected to the login page
+
+The logout process:
+- Calls `supabase.auth.signOut()` to invalidate your session
+- Clears all cached user data from `localStorage`
+- Resets the application state
+
+```javascript
+// Logout is handled by the logout() function
+await supabase.auth.signOut();
+window.currentUser = null;
+localStorage.removeItem('currentUser');
+localStorage.removeItem('fullUser');
+```
+
+<Info>
+Logging out on one device doesn't affect your sessions on other devices unless you explicitly sign out everywhere.
+</Info>
+
+## Automatic Session Validation
+
+### Background Session Checks
+
+Hive includes automatic session validation that runs before critical operations:
+
+- Creating or editing tasks
+- Updating projects
+- Modifying user profiles
+- Uploading files
+
+If your session has expired, you'll be automatically prompted to log in again without losing your work.
+
+### Acting on Behalf (Admin Feature)
+
+Administrators can act on behalf of other users through the "LCUser" (Lightweight Current User) system:
+
+- The admin's actual session remains active
+- Actions are performed as another user
+- Audit trails track the actual admin performing actions
+
+This is stored separately in `localStorage.LCUser`.
+
+## Troubleshooting
+
+### "Session not found" errors
+
+If you see session errors:
+
+1. **Clear your browser cache** and try logging in again
+2. **Check your internet connection** - Session validation requires connectivity
+3. **Verify with your admin** that your account is still active
+
+### Login loop issues
+
+If you're stuck in a login loop:
+
+1. Open browser DevTools (F12)
+2. Go to **Application** > **Local Storage**
+3. Clear all Hive-related entries
+4. Refresh the page and try logging in again
+
+### Password reset
+
+If you've forgotten your password:
+
+1. Contact your system administrator
+2. They can reset your password using the admin panel
+3. You'll receive instructions to set a new password
+
+<Note>
+Self-service password reset via email is available if your organization has configured email settings in Supabase.
+</Note>
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use strong passwords" icon="lock">
+    Choose a unique password that's at least 12 characters long with a mix of letters, numbers, and symbols.
+  </Card>
+  <Card title="Log out on shared devices" icon="arrow-right-from-bracket">
+    Always log out when using Hive on public or shared computers.
+  </Card>
+  <Card title="Keep credentials private" icon="eye-slash">
+    Never share your username or password with anyone, including colleagues.
+  </Card>
+  <Card title="Report suspicious activity" icon="shield-halved">
+    Contact your administrator immediately if you notice unauthorized access to your account.
+  </Card>
+</CardGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Profile Management" icon="user" href="/guides/profile-management">
+    Update your profile information and settings
+  </Card>
+  <Card title="User Roles" icon="users-gear" href="/features/people">
+    Learn about different user roles and permissions
+  </Card>
+</CardGroup>

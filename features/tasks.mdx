@@ -1,0 +1,274 @@
+---
+title: "Tasks"
+description: "Create, assign, and track tasks across your projects in Hive"
+---
+
+# Tasks
+
+Tasks are the building blocks of work in Hive. Each task represents a specific piece of work that can be assigned, tracked, and completed by team members.
+
+## Creating a New Task
+
+You can create tasks from two locations:
+
+### From the Tasks Screen
+
+1. Navigate to **Tareas** (Tasks) in the sidebar
+2. Click the **Nueva Tarea** button
+3. Fill in the task details
+4. Click **Crear Tarea** to save
+
+### From the Projects Screen
+
+Tasks created in the Projects view are automatically associated with the project column where you create them.
+
+<Tip>
+Create tasks directly in project columns to automatically link them to the right project.
+</Tip>
+
+## Task Fields
+
+When creating or editing a task, you can set:
+
+### Required Fields
+- **Title**: Clear, descriptive name for the task (required)
+
+### Optional Fields
+- **Description**: Detailed information about what needs to be done
+- **Priority**: Low, Medium, High, or Urgent
+- **Due Date**: When the task should be completed
+- **Project**: Which project this task belongs to
+- **Assignees**: Team members responsible for the task (multiple allowed)
+- **Tags/Labels**: Categorize tasks with colored labels
+- **Progress**: Percentage completion (0-100%)
+
+<CardGroup cols={2}>
+  <Card title="Priority Levels" icon="flag">
+    **Urgent** - Requires immediate attention
+    
+    **High** - Important and time-sensitive
+    
+    **Medium** - Normal priority
+    
+    **Low** - Can be done when time allows
+  </Card>
+  <Card title="Task Status" icon="circle-dot">
+    **No iniciada** - Not yet started
+    
+    **En progreso** - Currently being worked on
+    
+    **Completada** - Finished
+  </Card>
+</CardGroup>
+
+## Assigning Tasks to Team Members
+
+### Adding Assignees
+
+1. Open the task modal by clicking on any task card
+2. In the **Asignar a** section, select team members from the dropdown
+3. Click the **Add** button to assign them to the task
+4. Multiple team members can be assigned to a single task
+
+### Removing Assignees
+
+To remove a team member from a task:
+- Click on their avatar/photo in the task modal
+- The assignee will be removed immediately
+
+<Tip>
+Assign multiple people to collaborative tasks, but designate a primary owner to avoid confusion about accountability.
+</Tip>
+
+## Setting Task Priority
+
+Priority helps team members understand what to work on first:
+
+- **Baja (Low)**: Background tasks, nice-to-haves
+- **Media (Medium)**: Standard work items
+- **Alta (High)**: Important tasks with deadlines
+- **Urgente (Urgent)**: Critical issues requiring immediate attention
+
+Priority badges appear on task cards with color coding:
+- 🟢 Low - Green
+- 🟡 Medium - Yellow  
+- 🟠 High - Orange
+- 🔴 Urgent - Red
+
+## Managing Due Dates
+
+### Setting Due Dates
+
+1. Click the date picker in the task modal
+2. Select the deadline date
+3. The system automatically calculates remaining days
+
+### Date Indicators
+
+Tasks display:
+- **Days remaining** until the due date
+- **Overdue warnings** for tasks past their deadline
+- **Date formatting** in MM/DD format for clarity
+
+<Warning>
+Overdue tasks may display in red or with warning indicators to help you prioritize catching up.
+</Warning>
+
+## Task Status Management
+
+Status is automatically updated based on progress:
+
+- **0%**: No iniciada (Not Started)
+- **1-99%**: En progreso (In Progress)
+- **100%**: Completada (Completed)
+
+You can manually adjust progress using the slider in the task modal.
+
+## Using Tags and Labels
+
+### Adding Tags to Tasks
+
+1. Open the task modal
+2. In the **Etiquetas** section, select from existing tags
+3. Click **Agregar** to apply the tag
+4. Multiple tags can be added to a single task
+
+### Creating New Tags
+
+Administrators can create new tags from the Dashboard:
+1. Go to **Dashboard** → **Configuración de Etiquetas**
+2. Click **Crear Etiqueta**
+3. Set name, color, and description
+4. New tags become available for all tasks
+
+<Tip>
+Use consistent tag naming conventions like "Frontend", "Backend", "Bug", "Feature" to make filtering easier.
+</Tip>
+
+## Filtering and Searching Tasks
+
+The Tasks screen provides powerful filtering options:
+
+### Text Search
+Search by:
+- Task title
+- Description content
+- Tag names
+- Project names
+
+### Filter by Project
+Show only tasks from a specific project using the project dropdown.
+
+### Filter by Status
+Filter to see:
+- All tasks
+- Only not started tasks
+- Only in-progress tasks  
+- Only completed tasks
+
+### Sorting Options
+
+Sort tasks by:
+- **Más nuevas**: Newest first (default)
+- **Más antiguas**: Oldest first
+- **Vencen antes**: Due date ascending
+- **Vencen después**: Due date descending
+- **Mayor progreso**: Highest completion percentage
+- **Menor progreso**: Lowest completion percentage
+- **Mayor prioridad**: Urgent → High → Medium → Low
+- **Menor prioridad**: Low → Medium → High → Urgent
+
+<Tip>
+Combine filters to find exactly what you need. For example, filter by "En progreso" status and "Vencen antes" sorting to see your most urgent in-progress work.
+</Tip>
+
+## Editing Tasks
+
+### Edit Mode
+
+1. Click on any task card to open the task modal
+2. Click the **Editar** button to enter edit mode
+3. All fields become editable
+4. Make your changes
+5. Changes save automatically or click **Actualizar** as needed
+
+### Quick Progress Updates
+
+Without entering full edit mode:
+1. Open the task modal
+2. Use the progress slider to update completion percentage
+3. Click **Actualizar Progreso** to save
+
+## Deleting Tasks
+
+<Warning>
+Deleting a task is permanent and cannot be undone.
+</Warning>
+
+To delete a task:
+1. Open the task modal
+2. Scroll to the **Acciones** section
+3. Click **Eliminar Tarea** (red button)
+4. Confirm deletion in the dialog
+
+## Task Grid View
+
+The Tasks screen displays tasks in a responsive grid:
+- Each card shows key information at a glance
+- Click any card to view full details
+- Cards update in real-time when changes are made
+- Color-coded priority badges for quick scanning
+- Avatar indicators show assigned team members
+
+## Real-Time Collaboration
+
+Hive uses real-time synchronization:
+
+- Changes appear instantly for all users
+- Subtle animations indicate remote updates
+- Toast notifications alert you to changes
+- Conflict-free collaboration on the same tasks
+
+<Tip>
+You'll see a brief highlight animation when another user updates a task you're viewing.
+</Tip>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="How detailed should task descriptions be?">
+    Include enough detail that someone else could pick up the task and understand what needs to be done. Include links, requirements, and acceptance criteria when relevant.
+  </Accordion>
+
+  <Accordion title="Should I create one big task or multiple small tasks?">
+    Break large work items into smaller, manageable tasks (1-3 days of work each). This makes progress tracking more accurate and provides more frequent wins for the team.
+  </Accordion>
+
+  <Accordion title="How often should I update task progress?">
+    Update progress at least daily for active tasks. This helps managers understand project status without constantly asking for updates.
+  </Accordion>
+
+  <Accordion title="What should I do with old completed tasks?">
+    Completed tasks remain in the system for historical tracking. Use the status filter to hide them from your daily view while keeping the record intact.
+  </Accordion>
+
+  <Accordion title="Can I create task dependencies?">
+    Task dependencies are not currently built into the UI. Use task descriptions to note dependencies, or coordinate due dates to reflect the necessary sequence.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Projects" icon="folder-open" href="/features/projects">
+    Organize tasks into projects
+  </Card>
+  <Card title="People" icon="users" href="/features/people">
+    Manage team members and assignments
+  </Card>
+  <Card title="Calendar" icon="calendar" href="/features/calendar">
+    View tasks by due date
+  </Card>
+</CardGroup>

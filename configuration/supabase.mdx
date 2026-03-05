@@ -1,0 +1,369 @@
+---
+title: Supabase Setup
+description: Configure your Supabase project for Hive's authentication and database
+---
+
+Hive uses Supabase for authentication, database storage, and file uploads. This guide walks through setting up a new Supabase project with the required schema and security policies.
+
+## Create a Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) and sign in
+2. Click **New Project**
+3. Enter your project details:
+   - **Name**: Hive (or your preferred name)
+   - **Database Password**: Generate a secure password
+   - **Region**: Choose the closest region to your users
+4. Click **Create new project**
+
+<Note>
+  Save your database password - you'll need it for direct database access if required.
+</Note>
+
+## Database Schema
+
+### usuarios Table
+
+The `usuarios` table stores user profiles and links to Supabase Auth users. Create it with the following schema:
+
+```sql
+CREATE TABLE usuarios (
+  id SERIAL PRIMARY KEY,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  nombre_usuario TEXT UNIQUE NOT NULL,
+  nombre_completo TEXT,
+  cedula TEXT UNIQUE,
+  puesto TEXT,
+  rol TEXT DEFAULT 'usuario',
+  correo TEXT UNIQUE NOT NULL,
+  foto_url TEXT,
+  ultimo_acceso TIMESTAMPTZ,
+  presence_state TEXT DEFAULT 'offline',
+  last_manual_logout_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for faster lookups
+CREATE INDEX idx_usuarios_auth_user_id ON usuarios(auth_user_id);
+CREATE INDEX idx_usuarios_correo ON usuarios(correo);
+CREATE INDEX idx_usuarios_nombre_usuario ON usuarios(nombre_usuario);
+```
+
+<ParamField path="id" type="integer" required>
+  Primary key for the user record
+</ParamField>
+
+<ParamField path="auth_user_id" type="uuid">
+  Foreign key linking to Supabase Auth `auth.users.id`. This allows querying user profiles by authentication session.
+</ParamField>
+
+<ParamField path="nombre_usuario" type="string" required>
+  Username for login. Must be unique across all users.
+</ParamField>
+
+<ParamField path="nombre_completo" type="string">
+  Full name of the user (e.g., "Juan Pérez")
+</ParamField>
+
+<ParamField path="cedula" type="string">
+  National ID or employee ID number. Must be unique if provided.
+</ParamField>
+
+<ParamField path="puesto" type="string">
+  Job title or position (e.g., "Desarrollador Senior", "Gerente de Proyectos")
+</ParamField>
+
+<ParamField path="rol" type="string" default="usuario">
+  User role for access control. Valid values:
+  - `administrador` or `admin` - Full system access
+  - `usuario` - Standard user access
+  
+  The `/api/auth-sync` function checks this field to authorize admin operations.
+</ParamField>
+
+<ParamField path="correo" type="string" required>
+  Email address. Must match the email in Supabase Auth for authentication.
+</ParamField>
+
+<ParamField path="foto_url" type="string">
+  Profile picture URL. Can reference Supabase Storage or external URLs.
+</ParamField>
+
+<ParamField path="presence_state" type="string" default="offline">
+  Real-time presence status updated by `/api/presence-ping`. Values: `online`, `offline`
+</ParamField>
+
+<ParamField path="ultimo_acceso" type="timestamp">
+  Last access timestamp, updated on login and presence pings
+</ParamField>
+
+## Row Level Security (RLS)
+
+Enable RLS on the `usuarios` table to protect user data:
+
+```sql
+-- Enable RLS
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can read all profiles (for team member lists)
+CREATE POLICY "Users can view all profiles"
+  ON usuarios
+  FOR SELECT
+  USING (true);
+
+-- Policy: Users can update their own profile
+CREATE POLICY "Users can update own profile"
+  ON usuarios
+  FOR UPDATE
+  USING (auth.uid() = auth_user_id)
+  WITH CHECK (auth.uid() = auth_user_id);
+
+-- Policy: Service role can do anything (for serverless functions)
+CREATE POLICY "Service role full access"
+  ON usuarios
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+```
+
+<Warning>
+  RLS policies are critical for security. Never disable RLS on production tables without alternative security measures.
+</Warning>
+
+### Policy Breakdown
+
+<AccordionGroup>
+  <Accordion title="Users can view all profiles">
+    Allows any authenticated user to read all user profiles. This is necessary for:
+    - Displaying team member lists
+    - Showing task assignees
+    - User search and selection in the UI
+    
+    If you need stricter privacy, modify this policy to filter by organization or team.
+  </Accordion>
+  
+  <Accordion title="Users can update own profile">
+    Users can only modify their own profile record (matched by `auth_user_id`). This prevents users from:
+    - Changing other users' roles
+    - Modifying other users' email addresses
+    - Impersonating other users
+  </Accordion>
+  
+  <Accordion title="Service role full access">
+    The service role key bypasses RLS by default, but this policy makes it explicit. Serverless functions use the service role to:
+    - Create new users during signup
+    - Sync Auth changes to the `usuarios` table
+    - Update presence status for all users
+  </Accordion>
+</AccordionGroup>
+
+## Authentication Setup
+
+### Enable Email Authentication
+
+1. Go to **Authentication → Providers** in your Supabase dashboard
+2. Enable **Email** provider
+3. Configure settings:
+   - **Enable email confirmations**: Optional (recommended for production)
+   - **Enable email change confirmations**: Recommended
+   - **Secure email change**: Recommended
+
+### Email Templates
+
+Customize email templates under **Authentication → Email Templates**:
+
+- **Confirm signup**: Sent when new users register
+- **Magic Link**: For passwordless login (if enabled)
+- **Change Email Address**: Confirmation for email changes
+- **Reset Password**: Password recovery emails
+
+<Note>
+  Customize the email templates with your brand colors and logo for a professional user experience.
+</Note>
+
+## Storage Setup
+
+### Profile Pictures Bucket
+
+Create a storage bucket for user profile images:
+
+1. Go to **Storage** in your Supabase dashboard
+2. Click **Create bucket**
+3. Configure:
+   - **Name**: `profile-pics`
+   - **Public**: ✅ Enabled (for public profile image access)
+   - **File size limit**: 2 MB (recommended)
+   - **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+
+### Storage Policies
+
+```sql
+-- Allow authenticated users to upload their own profile picture
+CREATE POLICY "Users can upload own profile picture"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'profile-pics' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow public read access to profile pictures
+CREATE POLICY "Public profile pictures"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'profile-pics');
+
+-- Allow users to update/delete their own pictures
+CREATE POLICY "Users can update own picture"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id = 'profile-pics' AND
+    auth.role() = 'authenticated'
+  );
+
+CREATE POLICY "Users can delete own picture"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'profile-pics' AND
+    auth.role() = 'authenticated'
+  );
+```
+
+<Note>
+  The application uses `uploadProfileImage.js` to handle file uploads to the `profile-pics` bucket. After upload, it updates `usuarios.foto_url` with the file path.
+</Note>
+
+## Additional Tables
+
+Hive also requires these tables for full functionality:
+
+### proyectos
+
+```sql
+CREATE TABLE proyectos (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### tareas
+
+```sql
+CREATE TABLE tareas (
+  id SERIAL PRIMARY KEY,
+  titulo TEXT NOT NULL,
+  descripcion TEXT,
+  proyecto_id INTEGER REFERENCES proyectos(id) ON DELETE CASCADE,
+  proyecto TEXT,
+  progreso INTEGER DEFAULT 0,
+  fecha_vencimiento DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### tarea_usuarios (Task Assignments)
+
+```sql
+CREATE TABLE tarea_usuarios (
+  tarea_id INTEGER REFERENCES tareas(id) ON DELETE CASCADE,
+  usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+  assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (tarea_id, usuario_id)
+);
+
+CREATE INDEX idx_tarea_usuarios_tarea ON tarea_usuarios(tarea_id);
+CREATE INDEX idx_tarea_usuarios_usuario ON tarea_usuarios(usuario_id);
+```
+
+## Realtime Subscriptions
+
+Enable realtime for live updates:
+
+```sql
+-- Enable realtime for usuarios table
+ALTER PUBLICATION supabase_realtime ADD TABLE usuarios;
+ALTER PUBLICATION supabase_realtime ADD TABLE tareas;
+ALTER PUBLICATION supabase_realtime ADD TABLE tarea_usuarios;
+ALTER PUBLICATION supabase_realtime ADD TABLE proyectos;
+```
+
+The application uses Supabase Realtime in `app.realtime.js` to subscribe to table changes and update the UI automatically.
+
+## Testing the Connection
+
+After setup, test your Supabase connection:
+
+<CodeGroup>
+```javascript Browser Console
+// Open browser console on your deployed app
+console.log(window.__supabaseClient);
+
+// Test query
+const { data, error } = await window.supabase
+  .from('usuarios')
+  .select('count', { count: 'exact', head: true });
+
+if (error) {
+  console.error('Connection failed:', error);
+} else {
+  console.log('✅ Connected to Supabase');
+}
+```
+
+```bash SQL Editor
+-- Run in Supabase SQL Editor
+SELECT * FROM usuarios LIMIT 5;
+```
+</CodeGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error: relation 'usuarios' does not exist">
+    The `usuarios` table hasn't been created yet.
+    
+    **Solution**: Run the SQL schema creation commands in the Supabase SQL Editor.
+  </Accordion>
+  
+  <Accordion title="Error: new row violates row-level security policy">
+    RLS is enabled but no policy allows the operation.
+    
+    **Solution**: 
+    - Check that RLS policies are created
+    - Verify the user is authenticated (for policies requiring `auth.uid()`)
+    - Use the service role key for admin operations
+  </Accordion>
+  
+  <Accordion title="Profile picture uploads fail">
+    Storage bucket or policies not configured.
+    
+    **Solution**:
+    - Verify `profile-pics` bucket exists and is public
+    - Check storage policies allow authenticated uploads
+    - Ensure file size is under the bucket limit
+  </Accordion>
+  
+  <Accordion title="Email confirmations not working">
+    SMTP not configured or confirmation emails disabled.
+    
+    **Solution**:
+    - For development, disable email confirmations in Auth settings
+    - For production, configure custom SMTP in Auth → Settings
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear" href="/configuration/environment">
+    Configure environment variables for your deployment
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/configuration/deployment">
+    Deploy Hive to Vercel or other platforms
+  </Card>
+</CardGroup>

@@ -1,80 +1,398 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quickstart Guide"
+description: "Get up and running with Hive in minutes—from login to your first project and task"
 ---
 
-## Get started in three steps
+## Get Started in 5 Minutes
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This guide will walk you through logging into Hive, creating your first project, and adding your first task. You'll be managing your team's work in no time!
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  This quickstart assumes you already have access to a Hive instance. If you need to deploy your own, see the [Installation Guide](/installation).
 </Note>
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- A Hive account (username/email and password)
+- A modern web browser (Chrome, Firefox, Safari, or Edge)
+- Internet connection for real-time synchronization
+
+<Steps>
+
+### Step 1: Log Into Hive
+
+Navigate to your Hive instance URL and enter your credentials. You can log in using either your **username** or **email address**.
+
+```javascript app.js (Login Flow)
+// Hive supports login with username or email
+async function handleSupabaseLoginMain() {
+  const usernameOrEmail = document.getElementById('loginUsernameMain')?.value.trim();
+  const password = document.getElementById('loginPasswordMain')?.value.trim();
+  
+  if (!usernameOrEmail || !password) {
+    alert('Por favor completa todos los campos');
+    return;
+  }
+  
+  // If input is not an email, resolve username to email
+  let correo = usernameOrEmail;
+  if (!correo.includes('@')) {
+    const { data: rec } = await supabase
+      .from('usuarios')
+      .select('correo')
+      .eq('nombre_usuario', usernameOrEmail)
+      .maybeSingle();
+    
+    if (!rec || !rec.correo) {
+      throw new Error('Usuario o contraseña incorrectos');
+    }
+    correo = rec.correo;
+  }
+  
+  // Authenticate with Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({ 
+    email: correo, 
+    password 
+  });
+  
+  if (error) throw error;
+  
+  // Navigate to projects view
+  navigateTo('projects');
+}
+```
+
+<Tip>
+  Hive automatically resolves usernames to email addresses during login, so users can log in with their preferred identifier.
+</Tip>
+
+After successful login, you'll see the main Hive interface with the sidebar navigation on the left.
+
+### Step 2: Explore the Interface
+
+Once logged in, you'll see the main Hive workspace:
+
+- **Sidebar** - Navigate between Dashboard, Projects, Tasks, People, and Calendar views
+- **Main Area** - Where your projects and tasks are displayed
+- **User Avatar** - Access your profile and settings in the sidebar footer
+
+<Info>
+  The default view after login is **Projects**, where you can see all active projects.
+</Info>
+
+### Step 3: Create Your First Project
+
+Projects in Hive organize related tasks together. Let's create one:
+
+1. Click the **"Crear Proyecto"** (Create Project) button in the Projects view
+2. Fill in the project details:
+   - **Name** - Give your project a descriptive name
+   - **Description** - Add context about what this project is for
+   - **Start Date** - When the project begins
+   - **End Date** - Target completion date
+   - **Color** - Choose a color to visually identify this project
+
+```javascript app.js (Create Project)
+async function createProject() {
+  const projectName = document.getElementById('newProjectName')?.value.trim();
+  const projectDescription = document.getElementById('newProjectDescription')?.value;
+  const projectStartDate = document.getElementById('newProjectStartDate')?.value;
+  const projectEndDate = document.getElementById('newProjectEndDate')?.value;
+  
+  // Validate required fields
+  if (!projectName) {
+    alert('Por favor ingrese un nombre para el proyecto');
+    return;
+  }
+  
+  if (!projectStartDate || !projectEndDate) {
+    alert('Por favor introduzca Fecha de Inicio y Fecha de Fin');
+    return;
+  }
+  
+  // Validate dates
+  const startDate = new Date(projectStartDate);
+  const endDate = new Date(projectEndDate);
+  
+  if (startDate > endDate) {
+    alert('La Fecha de Inicio no puede ser posterior a la Fecha de Fin');
+    return;
+  }
+  
+  // Create project in database
+  const projectData = {
+    nombre: projectName,
+    descripcion: projectDescription,
+    estado: 'activo',
+    fecha_inicio: projectStartDate,
+    fecha_fin: projectEndDate,
+    creador_id: getCurrentUsuariosIdInt()
+  };
+  
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert([projectData])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating project:', error);
+    alert('Error al crear el proyecto');
+    return;
+  }
+  
+  // Update local state and UI
+  projects.push(data);
+  renderProjects();
+  closeCreateProjectModal();
+}
+```
+
+<Warning>
+  Project names must be unique within your Hive instance. If you try to create a project with a duplicate name, you'll see an error message.
+</Warning>
+
+3. Click **"Crear"** (Create) to save your project
+
+Your new project will appear in the Projects view as a column with your chosen color.
+
+### Step 4: Add Your First Task
+
+Now let's add a task to your new project:
+
+1. Find your project column in the Projects view
+2. Click the **"+"** button at the top of the project column
+3. Fill in the task details:
+   - **Title** - Short, descriptive name for the task
+   - **Description** - Detailed information about what needs to be done
+   - **Due Date** - When this task should be completed
+   - **Priority** - Low, Medium, or High
+   - **Assignees** - Select team members to work on this task
+   - **Tags** - Add labels to categorize the task
+
+```javascript app.js (Create Task)
+async function createTaskFromForm() {
+  // Gather form data
+  const title = document.getElementById('taskTitle')?.value.trim();
+  const description = document.getElementById('taskDescription')?.value;
+  const dueDate = document.getElementById('taskDueDate')?.value;
+  const priority = document.getElementById('taskPriority')?.value || 'media';
+  const projectId = document.getElementById('taskProjectSelect')?.value;
+  
+  // Validate required fields
+  if (!title) {
+    alert('El título es obligatorio');
+    return;
+  }
+  
+  if (!projectId) {
+    alert('Debe seleccionar un proyecto');
+    return;
+  }
+  
+  // Create task data
+  const taskData = {
+    titulo: title,
+    descripcion: description,
+    fecha_vencimiento: dueDate,
+    prioridad: priority,
+    proyecto_id: parseInt(projectId),
+    estado: 'pendiente',
+    porcentaje_completado: 0,
+    fecha_creacion: new Date().toISOString()
+  };
+  
+  // Insert into database
+  const { data: newArr, error: createErr } = await supabase
+    .from('tareas')
+    .insert([taskData])
+    .select()
+    .limit(1);
+  
+  if (createErr) {
+    console.error('Error creating task:', createErr);
+    alert('Error creando tarea');
+    return;
+  }
+  
+  const newTask = newArr[0];
+  
+  // Update local state
+  tasks.push(newTask);
+  
+  // Refresh UI
+  renderTasks();
+  closeCreateTaskModal();
+  
+  alert('Tarea creada exitosamente');
+}
+```
+
+<Tip>
+  You can assign multiple team members to a single task. Hive will show all assigned members' avatars on the task card.
+</Tip>
+
+4. Click **"Crear"** (Create) to save your task
+
+Your new task will appear in the project column!
+
+### Step 5: Manage Your Task
+
+Now that you have a task, try these common actions:
+
+**Update Task Progress:**
+
+Click on the task card to open the task details modal. You'll see a progress slider—drag it to update the completion percentage.
+
+```javascript app.js (Update Progress)
+async function updateTaskProgress(taskId, percentage) {
+  const percent = Math.max(0, Math.min(100, parseInt(percentage) || 0));
+  
+  const { data, error } = await supabase
+    .from('tareas')
+    .update({ porcentaje_completado: percent })
+    .eq('id', taskId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating progress:', error);
+    return;
+  }
+  
+  // Update local state
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.porcentaje_completado = percent;
+  }
+  
+  // Refresh UI
+  renderTasks();
+}
+```
+
+**Move Task Between Projects:**
+
+Drag and drop the task card to a different project column. Hive will automatically update the task's project assignment.
+
+```javascript app.js (Drag & Drop)
+async function handleTaskDrop(containerEl, projectId, taskId) {
+  const { data, error } = await supabase
+    .from('tareas')
+    .update({ proyecto_id: projectId })
+    .eq('id', taskId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error moving task:', error);
+    return;
+  }
+  
+  // Update local state
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.proyecto_id = projectId;
+  }
+  
+  // Refresh UI
+  renderProjects();
+}
+```
+
+**Change Task Status:**
+
+Click the status indicator (colored dot) on the task card to cycle through: Pendiente → En Progreso → Completada.
+
+### Step 6: Explore Real-time Updates
+
+Hive's real-time synchronization means changes are instantly visible to all team members:
+
+1. Open Hive in a second browser window or tab (or have a teammate open it)
+2. Make a change in one window (e.g., update task progress)
+3. Watch the change appear automatically in the other window
+
+<Info>
+  Real-time updates use WebSocket connections through Supabase Realtime. No polling or manual refreshing required!
+</Info>
+
+```javascript app.realtime.js (Realtime Sync)
+// Realtime subscription for task changes
+const ch = client.channel('rt-pmh-tareas-global');
+
+ch.on('postgres_changes', { 
+  event: 'UPDATE', 
+  schema: 'public', 
+  table: 'tareas' 
+}, async (payload) => {
+  const taskId = payload.new.id;
+  
+  // Skip if this was a local change (avoid double-update)
+  if (isTaskMuted(taskId)) {
+    console.log('Skipping realtime update for local change');
+    return;
+  }
+  
+  // Fetch fresh task data and update UI
+  await refreshTaskData(taskId);
+  
+  // Show subtle notification
+  const task = tasks.find(t => t.id === taskId);
+  createToast(`${task.titulo} actualizada`, 'info', 1600);
+});
+
+ch.subscribe();
+```
+
+</Steps>
+
+## What's Next?
+
+Congratulations! You've created your first project and task in Hive. Here are some next steps:
+
+<CardGroup cols={2}>
+  <Card title="Explore Features" icon="compass" href="/features/projects">
+    Learn about advanced features like tags, calendar view, and analytics
+  </Card>
+  
+  <Card title="Team Collaboration" icon="users" href="/guides/collaboration">
+    Invite team members and manage permissions
+  </Card>
+  
+  <Card title="Profile Setup" icon="user" href="/guides/profile-management">
+    Customize your profile with a photo and contact information
+  </Card>
+  
+  <Card title="Dashboard Analytics" icon="chart-line" href="/features/dashboard">
+    View project progress and team workload metrics
+  </Card>
+</CardGroup>
+
+## Tips for Success
+
+<Tip>
+  **Use descriptive task titles**: Make titles specific and actionable (e.g., "Design login page mockup" instead of "Design stuff").
+</Tip>
+
+<Tip>
+  **Set realistic due dates**: Hive will highlight overdue tasks, so set dates you can actually meet.
+</Tip>
+
+<Tip>
+  **Leverage tags**: Create tags for categories like "bug", "feature", "urgent" to quickly filter and find tasks.
+</Tip>
+
+<Tip>
+  **Check the Dashboard**: The dashboard gives you a bird's-eye view of all projects and helps identify bottlenecks.
+</Tip>
+
+## Need Help?
+
+If you encounter any issues:
+
+- Check the browser console (F12) for error messages
+- Verify your internet connection for real-time sync
+- Contact your Hive administrator through the "Contactar al administrador" button
+- Review the [User Guide](/guides/authentication) for detailed instructions

@@ -1,0 +1,173 @@
+---
+title: Environment Variables
+description: Configure environment variables for Hive's Supabase integration and deployment
+---
+
+Hive requires several environment variables to connect to Supabase and configure authentication. These variables must be set in your deployment environment (Vercel, Netlify, etc.) or locally for development.
+
+## Required Environment Variables
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL. Format: `https://[project-ref].supabase.co`
+  
+  Example: `https://vcssfbdprqmpmuhwaapb.supabase.co`
+</ParamField>
+
+<ParamField path="SUPABASE_ANON_KEY" type="string" required>
+  The anonymous (public) key for your Supabase project. This key is safe to use in client-side code and respects Row Level Security policies.
+  
+  Find this in your Supabase project dashboard under **Settings → API**.
+</ParamField>
+
+<ParamField path="SUPABASE_SERVICE_KEY" type="string" required>
+  The service role key for server-side operations that bypass Row Level Security. **Keep this secret** - never expose it to the client.
+  
+  <Warning>
+    The service role key has full database access and bypasses all RLS policies. Only use it in serverless functions or backend code. Never include it in client-side bundles.
+  </Warning>
+  
+  Alternative names supported: `SUPABASE_SERVICE_ROLE_KEY`
+</ParamField>
+
+<ParamField path="ADMIN_EMAILS" type="string" optional>
+  Comma-separated list of email addresses to grant admin access, bypassing the `usuarios.rol` check.
+  
+  Example: `admin@company.com,superadmin@company.com`
+  
+  Used by the `/api/auth-sync` serverless function to whitelist administrators.
+</ParamField>
+
+## Client-Side Variables (Vercel)
+
+When deploying to Vercel or similar platforms, you can prefix environment variables with `NEXT_PUBLIC_` to make them available in the client bundle:
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_URL" type="string" optional>
+  Client-accessible Supabase URL (alternative to `SUPABASE_URL`)
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_ANON_KEY" type="string" optional>
+  Client-accessible anonymous key (alternative to `SUPABASE_ANON_KEY`)
+</ParamField>
+
+<Note>
+  The application automatically falls back between `NEXT_PUBLIC_*` prefixed variables and regular environment variables. See `supabaseClient.js:14-22` for implementation details.
+</Note>
+
+## Environment Variable Priority
+
+The Supabase client initialization follows this priority order:
+
+1. **Process environment variables** - `process.env.NEXT_PUBLIC_SUPABASE_URL`
+2. **Window globals** - `window.SUPABASE_URL` (for local development)
+3. **Hardcoded fallbacks** - Development defaults (only for development)
+
+<CodeGroup>
+```javascript supabaseClient.js
+// Environment variable resolution
+const supabaseUrl =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_URL) ||
+  window.SUPABASE_URL ||
+  'https://vcssfbdprqmpmuhwaapb.supabase.co'; // fallback for development
+
+const supabaseAnonKey =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY) ||
+  window.SUPABASE_ANON_KEY ||
+  'eyJhbGci...';
+```
+
+```javascript Serverless Functions
+// api/auth-sync.js and api/presence-ping.js
+function getEnv(name) {
+  return process.env[name] || process.env[`NEXT_PUBLIC_${name}`] || undefined;
+}
+
+const SUPABASE_URL = getEnv('SUPABASE_URL');
+const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
+const SUPABASE_SERVICE_ROLE_KEY = 
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 
+  process.env.SUPABASE_SERVICE_KEY;
+```
+</CodeGroup>
+
+## Development Setup
+
+For local development, create a `.env.local` file in the `frontend` directory:
+
+```bash .env.local
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Admin Whitelist
+ADMIN_EMAILS=your-email@company.com
+
+# Vercel Deployment (optional)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+```
+
+<Warning>
+  Never commit `.env.local` or `.env` files to version control. Add them to `.gitignore`.
+</Warning>
+
+## Production Setup
+
+### Vercel
+
+Set environment variables in the Vercel dashboard:
+
+1. Go to **Project Settings → Environment Variables**
+2. Add each variable for Production, Preview, and Development environments
+3. Click **Save**
+
+### Other Platforms
+
+For Netlify, Railway, or other platforms, refer to their documentation for setting environment variables:
+
+- **Netlify**: Site Settings → Build & Deploy → Environment
+- **Railway**: Project Settings → Variables
+- **Render**: Environment → Environment Variables
+
+## Validation
+
+The application validates the Supabase connection on initialization:
+
+```javascript
+// supabaseClient.js:48-60
+supabase.from('usuarios').select('count', { count: 'exact', head: true })
+  .then(response => {
+    if (response.error) {
+      console.error('❌ Error conectando a Supabase:', response.error.message);
+    } else {
+      console.log('✅ Supabase conectado correctamente (usuarios table accesible)');
+    }
+  });
+```
+
+Check the browser console for connection status messages when the application loads.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error: Supabase env vars missing">
+    This error occurs when serverless functions cannot find required environment variables.
+    
+    **Solution**: Ensure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`) are set in your deployment environment.
+  </Accordion>
+  
+  <Accordion title="Error: Supabase CDN no cargado">
+    The Supabase JavaScript SDK is not loaded from the CDN.
+    
+    **Solution**: Verify that `index.html` includes the Supabase CDN script:
+    ```html
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    ```
+  </Accordion>
+  
+  <Accordion title="401 Unauthorized in API calls">
+    The client is not authenticated or the access token is invalid.
+    
+    **Solution**: Ensure users are logged in before making API calls. The serverless functions require a valid `Authorization: Bearer <token>` header.
+  </Accordion>
+</AccordionGroup>

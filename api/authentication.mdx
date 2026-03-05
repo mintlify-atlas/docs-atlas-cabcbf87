@@ -1,0 +1,259 @@
+---
+title: 'Authentication'
+description: 'How to authenticate API requests to the Hive platform'
+---
+
+## Overview
+
+The Hive API uses Bearer token authentication powered by Supabase Auth. All API endpoints require a valid access token in the `Authorization` header.
+
+## Authentication Flow
+
+### 1. Obtain an Access Token
+
+Access tokens are issued by Supabase Auth through standard authentication flows:
+
+**Email/Password Sign In:**
+
+```javascript
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'your-password'
+});
+
+if (data.session) {
+  const accessToken = data.session.access_token;
+  // Use this token for API requests
+}
+```
+
+**OAuth/Social Sign In:**
+
+```javascript
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google' // or 'github', 'azure', etc.
+});
+```
+
+### 2. Include Token in API Requests
+
+Once you have an access token, include it in the `Authorization` header of all API requests:
+
+```bash
+Authorization: Bearer <your_access_token>
+```
+
+**Example cURL Request:**
+
+```bash
+curl -X POST https://your-domain.vercel.app/api/presence-ping \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"state": "online"}'
+```
+
+## Authorization Header Format
+
+The API expects the `Authorization` header in the following format:
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication. Must start with `Bearer ` followed by the access token.
+  
+  **Format:** `Bearer <access_token>`
+  
+  **Example:** `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U`
+</ParamField>
+
+## Token Validation
+
+When you make an API request, the server:
+
+1. Extracts the token from the `Authorization` header
+2. Creates a Supabase client with the token to verify authenticity
+3. Calls `supabase.auth.getUser()` to validate the token and retrieve user information
+4. Matches the authenticated user to a record in the `usuarios` table
+
+If any step fails, the API returns a `401 Unauthorized` error.
+
+## Token Expiration and Refresh
+
+### Access Token Lifespan
+
+Supabase access tokens typically expire after **1 hour**. When a token expires, API requests will return:
+
+```json
+{
+  "message": "Token inválido",
+  "error": "JWT expired"
+}
+```
+
+### Refreshing Tokens
+
+Use the refresh token to obtain a new access token:
+
+```javascript
+const { data, error } = await supabase.auth.refreshSession();
+
+if (data.session) {
+  const newAccessToken = data.session.access_token;
+  // Update your API client with the new token
+}
+```
+
+**Automatic Refresh:**
+
+The Supabase client can automatically refresh tokens when configured:
+
+```javascript
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY,
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true
+    }
+  }
+);
+```
+
+## User Roles and Permissions
+
+The Hive API implements role-based access control:
+
+### Standard User
+
+- Can access their own user data
+- Can update their presence status
+- **Endpoints:** `/api/presence-ping`
+
+### Administrator
+
+Administrator access is determined by:
+
+1. **Role in usuarios table:** User must have `rol` field set to one of:
+   - `administrador`
+   - `admin`
+   - `superadmin`
+   - `super-admin`
+
+2. **Admin whitelist:** Email listed in `ADMIN_EMAILS` environment variable (comma-separated)
+
+**Administrators can:**
+- Sync user authentication credentials
+- Update any user's email, password, or username
+- Access all standard user endpoints
+
+**Endpoints:** `/api/auth-sync`, `/api/presence-ping`
+
+## User Identification
+
+The API identifies users in the `usuarios` table using multiple fallback strategies:
+
+1. **By `auth_user_id`** - Direct match to Supabase Auth user ID
+2. **By `correo`** - Email address from Auth matches email in usuarios
+3. **By `nombre_usuario`** - Username equals full email address
+4. **By `nombre_usuario`** - Username equals local part of email (before `@`)
+
+This flexible matching ensures compatibility with various user setup configurations.
+
+## Error Responses
+
+### 401 Unauthorized - Missing Token
+
+```json
+{
+  "message": "Authorization Bearer token requerido"
+}
+```
+
+**Cause:** No `Authorization` header provided, or header doesn't start with `Bearer `.
+
+### 401 Unauthorized - Invalid Token
+
+```json
+{
+  "message": "Token inválido",
+  "error": "JWT expired"
+}
+```
+
+**Cause:** Token is expired, malformed, or revoked.
+
+**Solution:** Refresh your access token and retry the request.
+
+### 403 Forbidden - Insufficient Permissions
+
+```json
+{
+  "message": "Acceso denegado (se requiere administrador)"
+}
+```
+
+**Cause:** Valid token but user doesn't have required administrator role.
+
+**Solution:** Ensure the user has an admin role in the `usuarios` table or is whitelisted in `ADMIN_EMAILS`.
+
+### 404 Not Found - User Not in Database
+
+```json
+{
+  "message": "No se encontró el usuario en la tabla usuarios"
+}
+```
+
+**Cause:** Authenticated user exists in Supabase Auth but has no matching record in the `usuarios` table.
+
+**Solution:** Create a corresponding record in `usuarios` with matching `correo` or `auth_user_id`.
+
+## Best Practices
+
+1. **Secure Token Storage:** Never expose access tokens in client-side code or version control
+2. **Token Refresh:** Implement automatic token refresh to maintain seamless API access
+3. **Error Handling:** Always handle 401 errors by refreshing tokens and retrying
+4. **HTTPS Only:** Never send tokens over unencrypted HTTP connections
+5. **Token Revocation:** Call `supabase.auth.signOut()` when users log out to invalidate tokens
+
+## Testing Authentication
+
+To test your authentication setup:
+
+```bash
+# 1. Sign in and capture token
+curl -X POST https://your-supabase-url.supabase.co/auth/v1/token?grant_type=password \
+  -H "apikey: YOUR_SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your-password"
+  }'
+
+# 2. Use the access_token from the response
+curl -X POST https://your-domain.vercel.app/api/presence-ping \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"state": "online"}'
+```
+
+## Environment Configuration
+
+Ensure these environment variables are set for authentication to work:
+
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anonymous key (safe for client-side use)
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only, never expose)
+- `ADMIN_EMAILS` - Comma-separated list of admin emails (optional)
+
+## Next Steps
+
+- Review [/api/auth-sync](/api/auth-sync) endpoint documentation
+- Review [/api/presence-ping](/api/presence-ping) endpoint documentation
+- Explore the [API Overview](/api/overview) for general concepts

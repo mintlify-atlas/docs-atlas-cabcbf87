@@ -1,0 +1,330 @@
+---
+title: "Calendar"
+description: "View and manage tasks by date in Hive's calendar interface"
+---
+
+# Calendar
+
+The Calendar view in Hive provides a date-based visualization of your tasks, making it easy to see deadlines, plan work, and identify scheduling conflicts.
+
+## Accessing the Calendar
+
+Navigate to the Calendar view:
+1. Click **Calendario** in the sidebar menu
+2. The calendar displays the current month by default
+3. Tasks with due dates appear on their respective days
+
+## Calendar Interface
+
+### Month Navigation
+
+The calendar header provides navigation controls:
+
+<CardGroup cols={3}>
+  <Card title="Previous Month" icon="chevron-left">
+    Click the **‹** button to go back one month
+  </Card>
+  <Card title="Current Month" icon="calendar-day">
+    Month name and year displayed in the center
+  </Card>
+  <Card title="Next Month" icon="chevron-right">
+    Click the **›** button to advance one month
+  </Card>
+</CardGroup>
+
+### Calendar Grid
+
+The calendar displays:
+- Full month view with all days
+- Week starts on Sunday (standard format)
+- Current day highlighted
+- Days with tasks indicated by task indicators
+- Tasks displayed on their due date
+
+<Tip>
+Use the month navigation arrows or keyboard shortcuts to quickly scan upcoming and past months for task deadlines.
+</Tip>
+
+## Viewing Tasks on the Calendar
+
+### Task Display
+
+Tasks appear on the calendar based on their **due date** (`fecha_vencimiento`):
+
+- Each task is shown as a small card or indicator on its due date
+- Multiple tasks on the same day stack vertically
+- Task titles are visible (may be truncated for space)
+- Color coding from project colors may appear
+- Priority indicators show task urgency
+
+### Task Details
+
+Click on any task in the calendar to:
+- Open the full task modal
+- View all task details
+- Edit the task (if you have permissions)
+- Update progress
+- Change the due date
+
+<Card title="Task Information on Calendar" icon="info-circle">
+Calendar task cards typically show:
+- Task title
+- Project name (if assigned)
+- Priority indicator
+- Assignee avatars
+- Time remaining indicator
+</Card>
+
+## Filtering Calendar Tasks
+
+### Calendar Filters
+
+The Calendar screen includes filter controls (section starts around line 2131 in the HTML):
+
+**Common Filters**:
+- **Project Filter**: Show only tasks from specific projects
+- **Status Filter**: Show only tasks with certain status (Not Started, In Progress, Completed)
+- **Assignee Filter**: View tasks assigned to specific team members
+- **Priority Filter**: Focus on high-priority or urgent tasks
+
+Filters work in combination—apply multiple filters to narrow your view.
+
+### Text Search
+
+Use the search box to filter tasks by:
+- Task title
+- Description keywords
+- Project names
+- Tag names
+
+<Tip>
+Combine project and date filtering to see "What does the Frontend team have due this month?"
+</Tip>
+
+## Creating Tasks from Calendar
+
+While the primary task creation flow is in the Tasks screen, you can:
+
+1. Note the date you're viewing
+2. Open the task creation modal (via sidebar or floating action button)
+3. Set the due date to match the calendar day you selected
+4. Create the task
+
+The task will appear on the calendar once its due date is set.
+
+<Warning>
+Creating tasks directly by clicking empty calendar days is not currently supported. Use the **Nueva Tarea** button and set the due date manually.
+</Warning>
+
+## Date-Based Workflows
+
+### Planning Sprints
+
+Use the calendar to:
+- Visualize sprint boundaries
+- Identify overloaded dates (too many tasks due)
+- Spread deadlines evenly across the week
+- Avoid deadline clustering
+
+### Deadline Management
+
+<AccordionGroup>
+  <Accordion title="Identifying Deadline Conflicts">
+    Scan the calendar for days with many tasks. If multiple high-priority items are due the same day, consider:
+    - Rescheduling lower-priority tasks
+    - Assigning additional team members
+    - Breaking large tasks into smaller ones with staggered deadlines
+  </Accordion>
+
+  <Accordion title="Planning Around Holidays">
+    Navigate to months containing holidays or team vacations. Avoid scheduling critical deadlines on these dates. Move important due dates to before or after time off.
+  </Accordion>
+
+  <Accordion title="Backlog Review">
+    Navigate to past months to identify:
+    - Overdue tasks that need attention
+    - Completed tasks for retrospective review
+    - Timeline patterns (when are we busiest?)
+  </Accordion>
+</AccordionGroup>
+
+### Weekly Planning
+
+Use the calendar to plan your week:
+
+1. **Monday Morning**: Review the current week's calendar
+2. **Identify Heavy Days**: Note which days have the most deadlines
+3. **Prioritize**: Focus on urgent tasks early in the week
+4. **Reschedule**: Move non-critical items to lighter days
+5. **Communicate**: Share deadline changes with team members
+
+<Tip>
+Spend 15 minutes every Monday reviewing the calendar to catch deadline conflicts before they become urgent.
+</Tip>
+
+## Task Colors on Calendar
+
+Tasks may appear with colors based on:
+
+- **Project Color**: Tasks inherit their project's color scheme
+- **Priority Color**: High-priority tasks may show in orange/red
+- **Status Color**: Completed tasks may appear in green
+- **Overdue Indication**: Past-due tasks may show in red or with warning icons
+
+### Color Legend
+
+Typical color meanings:
+
+| Color | Meaning |
+|-------|---------|  |
+| 🔴 Red | Overdue or Urgent priority |
+| 🟠 Orange | High priority |
+| 🟡 Yellow | Medium priority |
+| 🟢 Green | Completed or Low priority |
+| 🔵 Blue | Standard tasks (varies by project color) |
+
+## Keyboard Navigation
+
+<Card title="Calendar Shortcuts" icon="keyboard">
+**F** - Toggle sidebar menu
+
+**Arrow Keys** - Navigate between dates (if implemented)
+
+**Escape** - Close task modal
+
+**Enter** - Open selected task
+</Card>
+
+Note: Specific calendar keyboard shortcuts depend on the implementation details not fully visible in the code.
+
+## Mobile Calendar View
+
+On mobile devices:
+
+- Calendar remains functional with touch navigation
+- Swipe left/right may navigate months (check implementation)
+- Task cards are touch-friendly sizes
+- Modal overlays work on mobile screens
+- Filters may collapse into a dropdown menu
+
+<Tip>
+On mobile, rotate to landscape orientation for a wider calendar view with more visible task titles.
+</Tip>
+
+## Calendar Limitations
+
+### Current Constraints
+
+<Card title="What's Not Available" icon="circle-xmark">
+- **Drag-and-Drop Rescheduling**: You can't drag tasks to new dates directly on the calendar. Edit the task modal to change due dates.
+- **Multi-Day Tasks**: Tasks don't span multiple days visually. Each task appears only on its due date.
+- **Time of Day**: Tasks don't show specific times, only dates.
+- **Recurring Tasks**: No built-in recurrence. Create separate tasks for repeating work.
+- **Calendar Export**: Can't export to Google Calendar, Outlook, or .ics files currently.
+</Card>
+
+### Workarounds
+
+**For drag-and-drop rescheduling**:
+1. Click the task to open the modal
+2. Update the due date field
+3. Save changes
+4. Task moves to new date on calendar
+
+**For multi-day projects**:
+- Break into multiple tasks with staggered due dates
+- Use task descriptions to note duration
+- Create milestone tasks for key phases
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="How far ahead should I plan on the calendar?">
+    Most teams benefit from planning 2-4 weeks ahead. Plan further for major projects, but avoid over-scheduling more than 6 weeks out—priorities change.
+  </Accordion>
+
+  <Accordion title="Should every task have a due date?">
+    No. Use due dates for time-sensitive work. Backlog items don't need due dates until they're scheduled. Only about 60-70% of tasks typically need explicit deadlines.
+  </Accordion>
+
+  <Accordion title="What if a task is overdue?">
+    Overdue tasks remain visible on their original due date. Review overdue items regularly:
+    - Complete them if still relevant
+    - Reschedule to a realistic new date
+    - Cancel if no longer needed
+    
+    Don't let overdue tasks pile up—triage weekly.
+  </Accordion>
+
+  <Accordion title="Can I see multiple team members' calendars at once?">
+    The calendar shows all tasks by default. Use the assignee filter to focus on specific team members. For true side-by-side comparison, open multiple browser windows/tabs.
+  </Accordion>
+
+  <Accordion title="How do I handle tasks without due dates?">
+    Tasks without due dates don't appear on the calendar. View them in:
+    - **Tasks** screen (Tareas)
+    - **Projects** screen under their project
+    - **People Board** under assignees
+    
+    Add due dates when scheduling work.
+  </Accordion>
+</AccordionGroup>
+
+## Integration with Other Views
+
+The Calendar works seamlessly with other Hive features:
+
+### Tasks Screen
+- Create tasks in Tasks, set due dates, see them in Calendar
+- Tasks created/edited in Calendar appear in Tasks view instantly
+- Filters are independent—Tasks and Calendar filters don't sync
+
+### Projects Screen
+- Project colors carry over to calendar task cards
+- Project due dates set expectations but don't directly appear on calendar
+- Use project filter to see one project's calendar
+
+### People Board
+- Calendar shows assignees on task cards
+- Filter calendar by assignee to see individual workloads over time
+- Useful for vacation planning and capacity management
+
+<Tip>
+Switch between Calendar and Tasks views frequently. Calendar is great for time-based planning; Tasks view is better for status-based workflow.
+</Tip>
+
+## Troubleshooting
+
+### Tasks Not Appearing
+
+If tasks are missing from the calendar:
+
+1. **Check Due Date**: Only tasks with due dates appear
+2. **Check Filters**: Ensure filters aren't hiding tasks
+3. **Check Month**: Navigate to the correct month
+4. **Refresh Page**: Force reload (Ctrl+R)
+5. **Verify Task Exists**: Check Tasks screen to confirm task exists
+
+### Calendar Won't Load
+
+1. Refresh the browser page
+2. Clear browser cache
+3. Check internet connection (Hive uses Supabase backend)
+4. Verify you're logged in
+5. Try a different browser
+
+---
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Tasks" icon="list-check" href="/features/tasks">
+    Learn about setting due dates and creating tasks
+  </Card>
+  <Card title="Projects" icon="folder" href="/features/projects">
+    Understand project timelines and planning
+  </Card>
+  <Card title="Dashboard" icon="chart-mixed" href="/features/dashboard">
+    View analytics and workload distribution
+  </Card>
+</CardGroup>

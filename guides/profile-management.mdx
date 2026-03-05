@@ -1,0 +1,347 @@
+---
+title: "Profile Management"
+description: "Customize your user profile, upload photos, and manage your personal information in Hive"
+---
+
+## Overview
+
+Your user profile in Hive contains your personal information, contact details, and settings. Keeping your profile up-to-date helps your team recognize and contact you easily.
+
+## Viewing Your Profile
+
+Access your profile by:
+
+1. Clicking your **avatar** or **name** in the top navigation bar
+2. Selecting **Profile** from the dropdown menu
+
+Your profile displays:
+- Profile photo or auto-generated initials avatar
+- Full name and username
+- Job title and ID number
+- Email address
+- User role
+- Last access timestamp
+
+## Profile Fields
+
+### User Information
+
+Your profile contains the following fields from the `usuarios` table:
+
+| Field | Description | Editable |
+|-------|-------------|----------|
+| `nombre_usuario` | Your unique username for login | ✓ |
+| `nombre_completo` | Your full name (shown to team members) | ✓ |
+| `cedula` | ID number or employee ID | ✓ |
+| `puesto` | Job title or position | ✓ |
+| `correo` | Email address for notifications | ✓ |
+| `rol` | User role (administrador, usuario, etc.) | Admin only |
+| `foto_url` | Profile photo storage path | ✓ |
+
+<Info>
+Your username must be unique across the organization. The system will notify you if you try to use a username that's already taken.
+</Info>
+
+## Editing Your Profile
+
+### Update Basic Information
+
+<Steps>
+  <Step title="Open profile editor">
+    Navigate to your profile page and click **Edit Profile**.
+  </Step>
+  <Step title="Modify fields">
+    Update any of the editable fields:
+    - **Full Name** (`nombre_completo`)
+    - **Username** (`nombre_usuario`)
+    - **Job Title** (`puesto`)
+    - **ID Number** (`cedula`)
+    - **Email** (`correo`)
+  </Step>
+  <Step title="Save changes">
+    Click **Save** to update your profile. Changes are saved to the database and synced across all sessions.
+  </Step>
+</Steps>
+
+<Warning>
+Changing your username will affect how you log in. Make sure to remember your new username for future logins.
+</Warning>
+
+### Field Validation
+
+Hive validates profile fields before saving:
+
+- **Email**: Must be a valid email format and unique in the system
+- **Username**: Must be unique and contain only alphanumeric characters
+- **Cedula**: Must be unique if provided (some organizations require this)
+
+If validation fails, you'll see inline error messages next to the affected fields:
+
+```javascript
+// Field validation example
+const { usernameTaken, emailTaken, cedulaTaken } = 
+  await checkUniqueUserFields({ username, email, cedula });
+
+if (usernameTaken) {
+  setFieldError('username', 'Este nombre de usuario ya existe');
+}
+```
+
+## Profile Photos
+
+### Avatar System
+
+Hive uses an intelligent avatar system:
+
+1. **Custom Photo** - If you upload a photo, it's displayed from Supabase Storage
+2. **Initials Avatar** - If no photo exists, an auto-generated SVG avatar with your initials is shown
+
+Initials avatars:
+- Use the first letters of your `nombre_completo`
+- Have a color generated from your name (consistent across sessions)
+- Are created locally (no network requests, zero bandwidth cost)
+
+### Uploading a Profile Photo
+
+<Steps>
+  <Step title="Select photo file">
+    In your profile editor, click **Choose File** or the photo upload button.
+  </Step>
+  <Step title="Choose image">
+    Select an image file from your device. Supported formats:
+    - JPEG/JPG
+    - PNG
+    - WebP
+    - SVG
+  </Step>
+  <Step title="Upload">
+    Click **Upload Image** to start the upload process.
+  </Step>
+  <Step title="Automatic processing">
+    The system will:
+    - Validate file size (max 3 MB)
+    - Validate file type
+    - Upload to Supabase Storage bucket `profile-pics`
+    - Update your `foto_url` field
+    - Refresh your avatar across the app
+  </Step>
+</Steps>
+
+<Tip>
+For best results, use a square image (1:1 aspect ratio) at least 200x200 pixels. The system will display it at various sizes across the interface.
+</Tip>
+
+### Upload Implementation
+
+Profile photos are handled by the `uploadProfileImage.js` utility:
+
+```javascript
+import { uploadProfileImageWithValidation } from './utils/uploadProfileImage.js';
+
+// Upload validates size and type automatically
+const { ok, url, path } = await uploadProfileImageWithValidation(file);
+
+if (ok) {
+  // Photo URL is stored in usuarios.foto_url
+  // Path format: {uid}/{uid}-Profile.{ext}
+  console.log('Photo uploaded:', path);
+}
+```
+
+### Photo Storage
+
+Profile photos are stored in Supabase Storage:
+
+- **Bucket**: `profile-pics`
+- **Path format**: `{user_id}/{user_id}-Profile.{extension}`
+- **Access**: Public URLs for team visibility
+- **Size limit**: 3 MB per file
+- **Upsert behavior**: Uploading a new photo replaces the old one
+
+<Info>
+The system stores the relative path (e.g., `abc123/abc123-Profile.jpg`) in your `foto_url` field. The full public URL is generated on-demand by `getUserAvatarUrl()`.
+</Info>
+
+### Removing Your Photo
+
+To remove your profile photo:
+
+1. Clear the `foto_url` field or set it to `"Foto por defecto"`
+2. Save your profile
+3. The system will automatically display your initials avatar instead
+
+## Updating Password and Email
+
+### Change Your Password
+
+<Warning>
+Password changes are handled through Supabase Auth and require re-authentication.
+</Warning>
+
+To change your password:
+
+1. Contact your system administrator for a password reset link
+2. Or use the "Forgot Password" feature if email is configured
+3. Follow the secure link sent to your email
+4. Set your new password
+
+### Update Your Email
+
+Changing your email address affects both:
+- **Login credentials** (if you log in with email)
+- **Notification delivery** (where system alerts are sent)
+
+<Steps>
+  <Step title="Update in profile">
+    Edit your profile and change the `correo` field to your new email.
+  </Step>
+  <Step title="Verify uniqueness">
+    The system checks that the new email isn't already used by another user.
+  </Step>
+  <Step title="Save and verify">
+    Save your changes. Depending on your organization's settings, you may need to verify the new email address.
+  </Step>
+</Steps>
+
+## Profile Visibility Settings
+
+### Team Visibility
+
+All team members can see:
+- Your name and username
+- Your profile photo or initials
+- Your job title
+- Your online/offline status (if presence tracking is enabled)
+
+Private information (only visible to you and admins):
+- Your email address (unless shared with team)
+- Your ID number (cedula)
+- Your role and permissions
+
+### Presence Status
+
+Your profile includes a `presence_state` field that shows:
+- **Online** - Currently active in the app
+- **Offline** - Not currently using the app
+- **Last seen** - Timestamp of your last activity
+
+This is tracked automatically through `ultimo_acceso` timestamps and real-time presence updates.
+
+<Info>
+Presence is updated via the Supabase Realtime system and background ping operations. No action is required on your part.
+</Info>
+
+## Admin Profile Management
+
+If you're an administrator, you can:
+
+- Edit other users' profiles
+- Change user roles (`rol` field)
+- Deactivate/activate accounts
+- Reset passwords
+- Upload photos on behalf of users
+
+Admin features are accessed through the **People** view in the main navigation.
+
+## Syncing Profile Changes
+
+### Real-time Updates
+
+When you update your profile:
+
+1. Changes are saved to the `usuarios` table in Supabase
+2. Your local cache (`localStorage.fullUser`) is updated
+3. The UI refreshes automatically:
+   - Sidebar displays updated name
+   - Navigation bar shows new photo
+   - Task assignments reflect new information
+
+### Cross-session Sync
+
+If you're logged in on multiple devices or tabs:
+- Profile changes may take a few moments to sync
+- Refresh the page to see the latest changes immediately
+- Real-time subscriptions will push updates automatically
+
+## Troubleshooting
+
+### Profile photo not updating
+
+<AccordionGroup>
+  <Accordion title="Clear browser cache">
+    Your browser may be caching the old image. Hard refresh (Ctrl+F5 or Cmd+Shift+R) to clear it.
+  </Accordion>
+  <Accordion title="Check file size and format">
+    Ensure your image is under 3 MB and in a supported format (JPEG, PNG, WebP, SVG).
+  </Accordion>
+  <Accordion title="Verify upload success">
+    Check the browser console for errors. The upload function should log success messages.
+  </Accordion>
+</AccordionGroup>
+
+### Changes not saving
+
+- **Check permissions**: Ensure you have edit access to your profile
+- **Validate fields**: Look for red error messages indicating validation failures
+- **Network issues**: Check your internet connection
+- **Session expired**: Log out and back in to refresh your session
+
+### Duplicate username error
+
+If you see "Este nombre de usuario ya existe":
+
+1. Try a different username
+2. Contact your admin if you believe there's an error
+3. Check for typos or special characters
+
+<Note>
+Usernames are case-sensitive and must be unique across the entire organization.
+</Note>
+
+## API Reference
+
+### Update User Profile
+
+```javascript
+// Update user fields in the database
+const { error } = await supabase
+  .from('usuarios')
+  .update({
+    nombre_completo: 'John Doe',
+    puesto: 'Senior Developer',
+    correo: 'john@example.com'
+  })
+  .eq('id', userId);
+```
+
+### Upload Profile Image
+
+```javascript
+import { uploadProfileImageWithValidation } from './utils/uploadProfileImage.js';
+
+try {
+  const { ok, url, path } = await uploadProfileImageWithValidation(file);
+  if (ok) {
+    console.log('Upload successful:', url);
+  }
+} catch (error) {
+  console.error('Upload failed:', error.message);
+}
+```
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/guides/authentication">
+    Learn about login, sessions, and security
+  </Card>
+  <Card title="Notifications" icon="bell" href="/guides/notifications">
+    Configure how you receive alerts and updates
+  </Card>
+  <Card title="Team Management" icon="users" href="/features/people">
+    View and manage team members
+  </Card>
+  <Card title="User Roles" icon="user-shield" href="/features/people">
+    Understand roles and permissions
+  </Card>
+</CardGroup>

@@ -1,0 +1,441 @@
+---
+title: Deployment
+description: Deploy Hive to Vercel, Netlify, or other hosting platforms
+---
+
+Hive is built as a static frontend with serverless API functions, making it ideal for deployment on platforms like Vercel, Netlify, or Cloudflare Pages.
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+- ✅ A configured Supabase project ([setup guide](/configuration/supabase))
+- ✅ Environment variables ready ([variables list](/configuration/environment))
+- ✅ Git repository with your Hive source code
+
+## Deploying to Vercel (Recommended)
+
+Vercel provides the best experience for deploying Hive with automatic serverless function deployment.
+
+### Quick Deploy
+
+<Steps>
+  <Step title="Import Repository">
+    1. Go to [vercel.com](https://vercel.com) and sign in
+    2. Click **Add New... → Project**
+    3. Import your Git repository (GitHub, GitLab, or Bitbucket)
+  </Step>
+  
+  <Step title="Configure Build Settings">
+    Vercel should auto-detect the configuration. If not, set:
+    
+    - **Framework Preset**: Other
+    - **Build Command**: (leave empty)
+    - **Output Directory**: `frontend`
+    - **Install Command**: `npm install`
+    - **Root Directory**: `source/frontend`
+  </Step>
+  
+  <Step title="Set Environment Variables">
+    Add these environment variables in the Vercel dashboard:
+    
+    ```bash
+    SUPABASE_URL=https://your-project.supabase.co
+    SUPABASE_ANON_KEY=eyJhbGci...
+    SUPABASE_SERVICE_KEY=eyJhbGci...
+    ADMIN_EMAILS=admin@company.com
+    
+    # Optional: Expose to client
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+    ```
+    
+    <Warning>
+      Never expose `SUPABASE_SERVICE_KEY` as a `NEXT_PUBLIC_*` variable. It must remain server-side only.
+    </Warning>
+  </Step>
+  
+  <Step title="Deploy">
+    Click **Deploy** and wait for the build to complete. Vercel will provide a production URL.
+  </Step>
+</Steps>
+
+### Serverless Functions
+
+Vercel automatically deploys files in the `/api` directory as serverless functions. Hive includes:
+
+<CodeGroup>
+```javascript api/auth-sync.js
+// POST /api/auth-sync
+// Syncs Supabase Auth changes to usuarios table
+// Requires admin role to execute
+
+module.exports = async (req, res) => {
+  // Admin-only: update email, password, username
+  // Mirrors changes to usuarios table
+  // Validates uniqueness constraints
+};
+```
+
+```javascript api/presence-ping.js
+// POST /api/presence-ping  
+// Updates user online/offline status
+// Called periodically by authenticated clients
+
+module.exports = async (req, res) => {
+  // Updates usuarios.presence_state
+  // Updates usuarios.ultimo_acceso
+  // Requires valid Bearer token
+};
+```
+</CodeGroup>
+
+<Note>
+  Both functions use the `@supabase/supabase-js` package specified in `package.json`. Vercel automatically installs dependencies for serverless functions.
+</Note>
+
+### Vercel Configuration
+
+Create a `vercel.json` in the `frontend` directory for advanced configuration:
+
+```json vercel.json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NODE_VERSION": "18"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
+}
+```
+
+<ParamField path="builds" type="array">
+  Defines how Vercel processes different file types. Static files use `@vercel/static`, API functions use `@vercel/node`.
+</ParamField>
+
+<ParamField path="routes" type="array">
+  Routing rules for requests. API routes go to serverless functions, all other requests serve static files.
+</ParamField>
+
+<ParamField path="functions.memory" type="number" default="1024">
+  Memory allocation for serverless functions in MB. Increase if functions timeout.
+</ParamField>
+
+<ParamField path="functions.maxDuration" type="number" default="10">
+  Maximum execution time for serverless functions in seconds.
+</ParamField>
+
+## Deploying to Netlify
+
+Netlify also supports serverless functions with a similar workflow.
+
+<Steps>
+  <Step title="Create netlify.toml">
+    Create a `netlify.toml` in the `frontend` directory:
+    
+    ```toml netlify.toml
+    [build]
+      publish = "."
+      functions = "api"
+    
+    [[redirects]]
+      from = "/api/*"
+      to = "/.netlify/functions/:splat"
+      status = 200
+    
+    [dev]
+      framework = "#static"
+    ```
+  </Step>
+  
+  <Step title="Deploy to Netlify">
+    1. Connect your Git repository to Netlify
+    2. Set the **Base directory** to `source/frontend`
+    3. Leave **Build command** empty
+    4. Set **Publish directory** to `.`
+    5. Add environment variables (same as Vercel)
+    6. Click **Deploy site**
+  </Step>
+</Steps>
+
+<Note>
+  Netlify Functions have a different file structure than Vercel. You may need to adjust the `api` directory exports to match Netlify's format.
+</Note>
+
+## Deploying to Other Platforms
+
+### Cloudflare Pages
+
+Cloudflare Pages supports static hosting but requires Cloudflare Workers for serverless functions:
+
+1. Deploy static files to Cloudflare Pages
+2. Deploy `/api` functions as Cloudflare Workers
+3. Configure routing rules to proxy `/api/*` to Workers
+
+### Render
+
+Render supports static sites with serverless functions:
+
+1. Create a new **Static Site** on Render
+2. Set **Build Command** to (empty)
+3. Set **Publish Directory** to `source/frontend`
+4. Add environment variables
+5. For API functions, create separate **Web Services** or use Render's serverless support (if available)
+
+### Railway
+
+Railway is better suited for full-stack applications:
+
+1. Deploy as a Node.js service
+2. Use Express or similar to serve static files and handle `/api` routes
+3. Not recommended for this static + serverless architecture
+
+## Custom Domain Setup
+
+### Vercel
+
+<Steps>
+  <Step title="Add Domain">
+    1. Go to **Project Settings → Domains**
+    2. Enter your custom domain (e.g., `hive.company.com`)
+    3. Click **Add**
+  </Step>
+  
+  <Step title="Configure DNS">
+    Vercel provides DNS records to add to your domain registrar:
+    
+    - **A Record**: Points to Vercel's IP
+    - **CNAME Record**: Points to `cname.vercel-dns.com`
+    
+    Choose the option that works with your DNS provider.
+  </Step>
+  
+  <Step title="Verify">
+    Wait for DNS propagation (can take up to 48 hours, usually much faster). Vercel will automatically issue an SSL certificate.
+  </Step>
+</Steps>
+
+### Netlify
+
+Similar process:
+
+1. **Domain Settings → Add custom domain**
+2. Configure DNS with provided records
+3. Enable HTTPS (automatic with Let's Encrypt)
+
+## SSL/HTTPS Configuration
+
+Both Vercel and Netlify provide automatic SSL certificates via Let's Encrypt:
+
+- ✅ **Automatic renewal** - Certificates renew before expiration
+- ✅ **Force HTTPS** - Redirect HTTP to HTTPS automatically
+- ✅ **Modern TLS** - Supports TLS 1.2 and 1.3
+
+<Warning>
+  Always use HTTPS in production. Supabase Auth requires secure connections to prevent token interception.
+</Warning>
+
+## Environment-Specific Configuration
+
+### Preview Deployments
+
+Both Vercel and Netlify support preview deployments for pull requests:
+
+- **Vercel**: Automatic preview URLs for every push
+- **Netlify**: Deploy previews with unique URLs
+
+Set preview-specific environment variables if needed:
+
+```bash
+# Preview environment (Vercel)
+SUPABASE_URL=https://staging-project.supabase.co
+SUPABASE_ANON_KEY=staging_key...
+```
+
+### Production vs Development
+
+Use separate Supabase projects for production and development:
+
+<CodeGroup>
+```bash Production Environment
+SUPABASE_URL=https://prod-project.supabase.co
+SUPABASE_ANON_KEY=prod_anon_key...
+SUPABASE_SERVICE_KEY=prod_service_key...
+ADMIN_EMAILS=admin@company.com
+```
+
+```bash Development Environment
+SUPABASE_URL=https://dev-project.supabase.co
+SUPABASE_ANON_KEY=dev_anon_key...
+SUPABASE_SERVICE_KEY=dev_service_key...
+ADMIN_EMAILS=dev@company.com,admin@company.com
+```
+</CodeGroup>
+
+## Post-Deployment Checklist
+
+<Steps>
+  <Step title="Verify Environment Variables">
+    Check that all required variables are set correctly in the deployment platform.
+  </Step>
+  
+  <Step title="Test Supabase Connection">
+    Open your deployed site's browser console and verify:
+    ```javascript
+    console.log(window.__supabaseClient);
+    // Should show Supabase client object
+    ```
+  </Step>
+  
+  <Step title="Test Authentication">
+    Try logging in with a test user to verify Auth integration.
+  </Step>
+  
+  <Step title="Test API Functions">
+    Make a POST request to `/api/presence-ping` with a valid Bearer token:
+    ```bash
+    curl -X POST https://your-site.vercel.app/api/presence-ping \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"state": "online"}'
+    ```
+  </Step>
+  
+  <Step title="Monitor Logs">
+    Check deployment platform logs for any errors:
+    - **Vercel**: Project → Deployments → View Function Logs
+    - **Netlify**: Site → Functions → View logs
+  </Step>
+</Steps>
+
+## Performance Optimization
+
+### Caching
+
+Configure caching headers in `vercel.json`:
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*).js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*).css",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### CDN
+
+Both Vercel and Netlify include global CDN by default:
+- Static assets cached at edge locations
+- Automatic compression (gzip, Brotli)
+- HTTP/2 and HTTP/3 support
+
+### Serverless Function Optimization
+
+Reduce cold start times:
+- Keep function code minimal
+- Use environment variables instead of fetching config
+- Cache Supabase client instances when possible
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="500 Error on API routes">
+    Serverless function crashed or timed out.
+    
+    **Solution**:
+    - Check function logs for error messages
+    - Verify environment variables are set
+    - Increase `maxDuration` in `vercel.json` if timeout
+    - Check that `@supabase/supabase-js` is in `package.json` dependencies
+  </Accordion>
+  
+  <Accordion title="404 Error on API routes">
+    API functions not deployed correctly.
+    
+    **Solution**:
+    - Verify `/api` directory exists in `source/frontend`
+    - Check build logs for function deployment messages
+    - Ensure `vercel.json` or `netlify.toml` routes are correct
+  </Accordion>
+  
+  <Accordion title="CORS errors on API calls">
+    Missing CORS headers in serverless functions.
+    
+    **Solution**: Add CORS headers to API responses:
+    ```javascript
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    ```
+  </Accordion>
+  
+  <Accordion title="Build fails with 'Module not found'">
+    Missing dependencies or incorrect paths.
+    
+    **Solution**:
+    - Run `npm install` in `source/frontend`
+    - Verify `package.json` includes `@supabase/supabase-js`
+    - Check that all import paths are correct
+  </Accordion>
+  
+  <Accordion title="Deployment succeeds but site is blank">
+    Incorrect output directory or missing `index.html`.
+    
+    **Solution**:
+    - Verify `index.html` exists in `source/frontend`
+    - Check deployment logs for "Publish directory" path
+    - Ensure all referenced assets (CSS, JS) are accessible
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear" href="/configuration/environment">
+    Review all available environment variables
+  </Card>
+  <Card title="Supabase Setup" icon="database" href="/configuration/supabase">
+    Configure your Supabase backend
+  </Card>
+</CardGroup>

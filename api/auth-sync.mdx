@@ -1,0 +1,457 @@
+---
+title: 'POST /api/auth-sync'
+description: 'Sync Supabase Auth user credentials and mirror changes to the usuarios table'
+---
+
+## Overview
+
+The `/api/auth-sync` endpoint allows administrators to update a user's email, password, or username in Supabase Auth and automatically mirror those changes to the `usuarios` table. This ensures consistency between authentication data and application user records.
+
+**Use Cases:**
+- Updating user email addresses
+- Resetting user passwords
+- Changing usernames
+- Synchronizing Auth and database records
+
+<Warning>
+  This endpoint requires **administrator** permissions. Standard users cannot access this endpoint.
+</Warning>
+
+## Endpoint
+
+```
+POST /api/auth-sync
+```
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token of an authenticated administrator.
+  
+  **Format:** `Bearer <access_token>`
+</ParamField>
+
+### Permission Requirements
+
+The caller must meet **one** of the following criteria:
+
+1. Have a `rol` field in `usuarios` table set to:
+   - `administrador`
+   - `admin`
+   - `superadmin`
+   - `super-admin`
+
+2. Be listed in the `ADMIN_EMAILS` environment variable
+
+## Request Body
+
+<ParamField body="id" type="integer" required>
+  The ID of the user in the `usuarios` table to update.
+  
+  **Example:** `123`
+</ParamField>
+
+<ParamField body="email" type="string" optional>
+  New email address for the user. Must be unique across all users.
+  
+  **Example:** `newemail@example.com`
+  
+  <Expandable title="Validation Rules">
+    - Must be a valid email format
+    - Cannot be already registered to another user
+    - Will be trimmed of whitespace
+    - Updates both Supabase Auth and `usuarios.correo`
+  </Expandable>
+</ParamField>
+
+<ParamField body="password" type="string" optional>
+  New password for the user. Updates only the Supabase Auth password.
+  
+  **Example:** `newSecurePassword123!`
+  
+  <Expandable title="Security Notes">
+    - Transmitted securely over HTTPS
+    - Hashed by Supabase Auth before storage
+    - Not stored in the `usuarios` table
+    - Will be trimmed of whitespace
+  </Expandable>
+</ParamField>
+
+<ParamField body="username" type="string" optional>
+  New username for the user. Must be unique across all users.
+  
+  **Example:** `john_doe_2024`
+  
+  <Expandable title="Storage Details">
+    - Stored in Supabase Auth `user_metadata.username`
+    - Mirrored to `usuarios.nombre_usuario`
+    - Must be unique (checked before update)
+    - Will be trimmed of whitespace
+  </Expandable>
+</ParamField>
+
+<Note>
+  At least one of `email`, `password`, or `username` must be provided. Sending an empty request body will result in a `400` error.
+</Note>
+
+## Response
+
+### Success Response (200 OK)
+
+<ResponseField name="ok" type="boolean">
+  Always `true` for successful requests.
+</ResponseField>
+
+<ResponseField name="auth" type="object">
+  Supabase Auth user data after the update.
+  
+  <Expandable title="Properties">
+    <ResponseField name="auth.id" type="string">
+      Supabase Auth user ID (UUID).
+    </ResponseField>
+    
+    <ResponseField name="auth.email" type="string">
+      Updated email address from Supabase Auth.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="user" type="object" optional>
+  Updated user record from the `usuarios` table. Only included if email or username was changed.
+  
+  <Expandable title="Properties">
+    <ResponseField name="user.id" type="integer">
+      User ID in the `usuarios` table.
+    </ResponseField>
+    
+    <ResponseField name="user.correo" type="string">
+      Updated email address.
+    </ResponseField>
+    
+    <ResponseField name="user.nombre_usuario" type="string">
+      Updated username.
+    </ResponseField>
+    
+    <ResponseField name="user.*" type="any">
+      Other fields from the `usuarios` table may be included.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Example Response:**
+
+```json
+{
+  "ok": true,
+  "auth": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "email": "newemail@example.com"
+  },
+  "user": {
+    "id": 123,
+    "correo": "newemail@example.com",
+    "nombre_usuario": "john_doe_2024",
+    "rol": "usuario",
+    "fecha_creacion": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## Error Responses
+
+### 400 Bad Request - Invalid User ID
+
+```json
+{
+  "message": "ID de usuario inválido"
+}
+```
+
+**Cause:** The `id` field is missing, not a number, or invalid.
+
+### 400 Bad Request - No Data to Update
+
+```json
+{
+  "message": "No hay datos para actualizar"
+}
+```
+
+**Cause:** Request body doesn't contain `email`, `password`, or `username`.
+
+### 400 Bad Request - Auth Update Failed
+
+```json
+{
+  "message": "Error actualizando Auth",
+  "error": "Invalid email format"
+}
+```
+
+**Cause:** Supabase Auth rejected the update (invalid email format, weak password, etc.).
+
+### 401 Unauthorized - Missing Token
+
+```json
+{
+  "message": "Authorization Bearer token requerido"
+}
+```
+
+**Cause:** No `Authorization` header or header doesn't start with `Bearer `.
+
+### 401 Unauthorized - Invalid Token
+
+```json
+{
+  "message": "Token inválido",
+  "error": "JWT expired"
+}
+```
+
+**Cause:** Access token is expired, invalid, or revoked.
+
+### 403 Forbidden - Not an Administrator
+
+```json
+{
+  "message": "Acceso denegado (se requiere administrador)"
+}
+```
+
+**Cause:** Authenticated user doesn't have administrator permissions.
+
+### 404 Not Found - User Not Found in Database
+
+```json
+{
+  "message": "Usuario no encontrado",
+  "error": "No rows found"
+}
+```
+
+**Cause:** No user exists in the `usuarios` table with the provided `id`.
+
+### 404 Not Found - Auth User Not Found
+
+```json
+{
+  "message": "Usuario de Auth no encontrado por correo actual"
+}
+```
+
+**Cause:** No Supabase Auth user found matching the current email in the `usuarios` table.
+
+<Note>
+  The endpoint searches through the first 200 Auth users. If your system has more than 200 users, pagination may need to be implemented.
+</Note>
+
+### 409 Conflict - Username Exists
+
+```json
+{
+  "error": "USERNAME_EXISTS",
+  "message": "El nombre de usuario ya está en uso"
+}
+```
+
+**Cause:** The provided `username` is already taken by another user.
+
+### 409 Conflict - Email Exists
+
+```json
+{
+  "error": "EMAIL_EXISTS",
+  "message": "El correo ya está registrado"
+}
+```
+
+**Cause:** The provided `email` is already registered to another user.
+
+### 500 Internal Server Error - Missing Environment Variables
+
+```json
+{
+  "message": "Supabase env vars missing",
+  "details": "Require SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY)",
+  "missing": {
+    "SUPABASE_URL": false,
+    "SUPABASE_ANON_KEY": false,
+    "SUPABASE_SERVICE_ROLE_KEY_or_SUPABASE_SERVICE_KEY": true
+  }
+}
+```
+
+**Cause:** Required environment variables are not configured.
+
+### 500 Internal Server Error - Database Error
+
+```json
+{
+  "message": "Error actualizando usuarios",
+  "error": "Database connection failed"
+}
+```
+
+**Cause:** Database operation failed (connection issue, constraint violation, etc.).
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL - Update Email
+curl -X POST https://your-domain.vercel.app/api/auth-sync \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "email": "newemail@example.com"
+  }'
+```
+
+```bash cURL - Update Password
+curl -X POST https://your-domain.vercel.app/api/auth-sync \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "password": "newSecurePassword123!"
+  }'
+```
+
+```bash cURL - Update Username
+curl -X POST https://your-domain.vercel.app/api/auth-sync \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "username": "john_doe_2024"
+  }'
+```
+
+```bash cURL - Update Multiple Fields
+curl -X POST https://your-domain.vercel.app/api/auth-sync \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "email": "newemail@example.com",
+    "password": "newSecurePassword123!",
+    "username": "john_doe_2024"
+  }'
+```
+
+```javascript JavaScript/Node.js
+const response = await fetch('https://your-domain.vercel.app/api/auth-sync', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id: 123,
+    email: 'newemail@example.com',
+    username: 'john_doe_2024'
+  })
+});
+
+const data = await response.json();
+
+if (response.ok) {
+  console.log('User updated:', data.user);
+  console.log('Auth updated:', data.auth);
+} else {
+  console.error('Error:', data.message);
+}
+```
+
+```python Python
+import requests
+
+url = 'https://your-domain.vercel.app/api/auth-sync'
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+}
+payload = {
+    'id': 123,
+    'email': 'newemail@example.com',
+    'username': 'john_doe_2024'
+}
+
+response = requests.post(url, json=payload, headers=headers)
+
+if response.status_code == 200:
+    data = response.json()
+    print('User updated:', data['user'])
+    print('Auth updated:', data['auth'])
+else:
+    print('Error:', response.json()['message'])
+```
+
+</CodeGroup>
+
+## Implementation Details
+
+### Update Process Flow
+
+1. **Authentication Verification**
+   - Extract Bearer token from Authorization header
+   - Validate token with Supabase Auth
+   - Retrieve caller's user data
+
+2. **Permission Check**
+   - Query `usuarios` table for caller's role
+   - Check if role is admin (administrador, admin, superadmin, super-admin)
+   - Check if email is in ADMIN_EMAILS whitelist
+   - Return 403 if neither condition is met
+
+3. **Target User Lookup**
+   - Find user in `usuarios` table by provided `id`
+   - Return 404 if user doesn't exist
+   - Extract current email (`correo`)
+
+4. **Auth User Matching**
+   - Search Supabase Auth users for matching email
+   - Return 404 if no Auth user found
+
+5. **Duplicate Validation**
+   - If updating username: check for existing `nombre_usuario`
+   - If updating email: check for existing `correo`
+   - Return 409 conflict if duplicates found
+
+6. **Update Operations**
+   - Update Supabase Auth user (email, password, user_metadata.username)
+   - Mirror changes to `usuarios` table (correo, nombre_usuario)
+   - Return success with updated data
+
+### User Identification Strategy
+
+The endpoint uses multiple fallback methods to identify the caller:
+
+1. Match by `auth_user_id` column (if exists)
+2. Match by `correo` equals Auth email
+3. Match by `nombre_usuario` equals full Auth email
+4. Match by `nombre_usuario` equals local part of Auth email (before @)
+
+This ensures compatibility with various database schema configurations.
+
+### Environment Variables
+
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Public anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SERVICE_KEY` - Admin service key
+- `ADMIN_EMAILS` - Comma-separated admin email whitelist (optional)
+
+## Best Practices
+
+1. **Validate Input:** Always validate email format and password strength before calling the API
+2. **Handle Conflicts:** Implement proper error handling for 409 conflicts (duplicate username/email)
+3. **Security:** Never expose service role keys in client-side code
+4. **User Feedback:** Provide clear feedback to users when updates fail
+5. **Audit Trail:** Consider logging all auth-sync operations for security auditing
+
+## Related Endpoints
+
+- [Authentication](/api/authentication) - How to obtain admin access tokens
+- [API Overview](/api/overview) - General API concepts and error codes

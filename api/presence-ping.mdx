@@ -1,0 +1,425 @@
+---
+title: 'POST /api/presence-ping'
+description: 'Update user online/offline presence status in the Hive platform'
+---
+
+## Overview
+
+The `/api/presence-ping` endpoint allows authenticated users to update their online/offline presence status in the system. This is typically used to track active users, show online indicators, and record last access times.
+
+**Use Cases:**
+- Mark user as online when they log in or become active
+- Mark user as offline when they log out or go idle
+- Track last access timestamp
+- Power online user lists and presence indicators
+
+## Endpoint
+
+```
+POST /api/presence-ping
+```
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token of the authenticated user.
+  
+  **Format:** `Bearer <access_token>`
+</ParamField>
+
+<Note>
+  Any authenticated user can call this endpoint to update their own presence. Admin permissions are not required.
+</Note>
+
+## Request Body
+
+<ParamField body="state" type="string" optional default="online">
+  The desired presence state for the user.
+  
+  **Allowed values:**
+  - `online` - Mark user as currently active (default)
+  - `offline` - Mark user as inactive or logged out
+  
+  **Example:** `"online"`
+</ParamField>
+
+<Note>
+  The request body is optional. If omitted or if `state` is not provided, the user will be marked as `online` by default.
+</Note>
+
+### Alternative: Query Parameter
+
+The `state` can also be passed as a query parameter:
+
+```
+POST /api/presence-ping?state=offline
+```
+
+Body parameter takes precedence over query parameter if both are provided.
+
+## Response
+
+### Success Response (200 OK)
+
+<ResponseField name="ok" type="boolean">
+  Always `true` for successful requests.
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Updated user presence data from the `usuarios` table.
+  
+  <Expandable title="Properties">
+    <ResponseField name="user.id" type="integer">
+      User ID in the `usuarios` table.
+    </ResponseField>
+    
+    <ResponseField name="user.ultimo_acceso" type="string">
+      ISO 8601 timestamp of the last access/presence update.
+      
+      **Example:** `"2024-03-05T14:23:45.123Z"`
+    </ResponseField>
+    
+    <ResponseField name="user.presence_state" type="string">
+      Current presence state of the user.
+      
+      **Values:** `"online"` or `"offline"`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Example Response:**
+
+```json
+{
+  "ok": true,
+  "user": {
+    "id": 42,
+    "ultimo_acceso": "2024-03-05T14:23:45.123Z",
+    "presence_state": "online"
+  }
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized - Missing Token
+
+```json
+{
+  "message": "Authorization Bearer token requerido"
+}
+```
+
+**Cause:** No `Authorization` header provided, or header doesn't start with `Bearer `.
+
+### 401 Unauthorized - Invalid Token
+
+```json
+{
+  "message": "Token inválido",
+  "error": "JWT expired"
+}
+```
+
+**Cause:** Access token is expired, invalid, or revoked.
+
+**Solution:** Refresh your access token and retry.
+
+### 404 Not Found - User Not in Database
+
+```json
+{
+  "message": "No se encontró el usuario en la tabla usuarios"
+}
+```
+
+**Cause:** Authenticated user exists in Supabase Auth but has no corresponding record in the `usuarios` table.
+
+**Solution:** Ensure a user record exists in `usuarios` with matching `correo`, `nombre_usuario`, or `auth_user_id`.
+
+### 405 Method Not Allowed
+
+```json
+{
+  "message": "Method Not Allowed"
+}
+```
+
+**Cause:** Using an HTTP method other than POST (e.g., GET, PUT, DELETE).
+
+**Solution:** Use POST method for this endpoint.
+
+### 500 Internal Server Error - Missing Environment Variables
+
+```json
+{
+  "message": "Supabase env vars missing",
+  "missing": {
+    "SUPABASE_URL": false,
+    "SUPABASE_ANON_KEY": false,
+    "SUPABASE_SERVICE_ROLE_KEY_or_SUPABASE_SERVICE_KEY": true
+  }
+}
+```
+
+**Cause:** Required environment variables are not configured.
+
+### 500 Internal Server Error - Database Update Failed
+
+```json
+{
+  "message": "Error actualizando presencia",
+  "error": "Database connection failed"
+}
+```
+
+**Cause:** Database operation failed (connection issue, schema mismatch, etc.).
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL - Mark Online (Default)
+curl -X POST https://your-domain.vercel.app/api/presence-ping \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json"
+```
+
+```bash cURL - Mark Online (Explicit)
+curl -X POST https://your-domain.vercel.app/api/presence-ping \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"state": "online"}'
+```
+
+```bash cURL - Mark Offline
+curl -X POST https://your-domain.vercel.app/api/presence-ping \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{"state": "offline"}'
+```
+
+```bash cURL - Query Parameter
+curl -X POST "https://your-domain.vercel.app/api/presence-ping?state=online" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+```javascript JavaScript/Node.js - Mark Online
+const response = await fetch('https://your-domain.vercel.app/api/presence-ping', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    state: 'online'
+  })
+});
+
+const data = await response.json();
+
+if (response.ok) {
+  console.log('Presence updated:', data.user);
+} else {
+  console.error('Error:', data.message);
+}
+```
+
+```javascript JavaScript - Periodic Heartbeat
+// Send presence ping every 5 minutes to stay online
+setInterval(async () => {
+  try {
+    const response = await fetch('https://your-domain.vercel.app/api/presence-ping', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ state: 'online' })
+    });
+    
+    if (response.ok) {
+      console.log('Presence heartbeat sent');
+    }
+  } catch (error) {
+    console.error('Presence heartbeat failed:', error);
+  }
+}, 5 * 60 * 1000); // 5 minutes
+```
+
+```python Python - Mark Offline
+import requests
+
+url = 'https://your-domain.vercel.app/api/presence-ping'
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+}
+payload = {'state': 'offline'}
+
+response = requests.post(url, json=payload, headers=headers)
+
+if response.status_code == 200:
+    data = response.json()
+    print('Presence updated:', data['user'])
+else:
+    print('Error:', response.json()['message'])
+```
+
+</CodeGroup>
+
+## Implementation Details
+
+### Update Process Flow
+
+1. **Authentication Verification**
+   - Extract Bearer token from Authorization header
+   - Validate token with Supabase Auth
+   - Retrieve authenticated user data
+
+2. **State Determination**
+   - Parse request body or query parameter for `state`
+   - Validate state is either `online` or `offline`
+   - Default to `online` if not specified or invalid
+
+3. **User Lookup**
+   - Search `usuarios` table for matching user record
+   - Try multiple identification strategies (see below)
+   - Return 404 if no match found
+
+4. **Database Update**
+   - Update `ultimo_acceso` to current timestamp (ISO 8601)
+   - Update `presence_state` to requested state
+   - If state is `offline`, attempt to update `last_manual_logout_at` (if column exists)
+   - Return updated user data
+
+### User Identification Strategy
+
+The endpoint identifies the calling user using multiple fallback methods:
+
+1. **By email (`correo`):** Match Auth email to `usuarios.correo`
+2. **By username equals email:** Match Auth email to `usuarios.nombre_usuario`
+3. **By username equals local part:** Match email local part (before @) to `usuarios.nombre_usuario`
+4. **By auth_user_id:** Direct match to `usuarios.auth_user_id` (if column exists)
+
+This flexible approach ensures compatibility with various database configurations.
+
+### Database Schema Compatibility
+
+The endpoint is designed to be resilient to schema variations:
+
+- If `last_manual_logout_at` column doesn't exist, the update falls back to only updating `ultimo_acceso` and `presence_state`
+- If `auth_user_id` column doesn't exist, user lookup relies on email/username matching
+
+### Timestamp Format
+
+All timestamps are stored in ISO 8601 format:
+
+```
+2024-03-05T14:23:45.123Z
+```
+
+## Common Integration Patterns
+
+### On Login
+
+Mark user as online immediately after successful authentication:
+
+```javascript
+const { data } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+});
+
+if (data.session) {
+  await fetch('/api/presence-ping', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${data.session.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ state: 'online' })
+  });
+}
+```
+
+### On Logout
+
+Mark user as offline when they explicitly log out:
+
+```javascript
+await fetch('/api/presence-ping', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ state: 'offline' })
+});
+
+await supabase.auth.signOut();
+```
+
+### Periodic Heartbeat
+
+Keep user marked as online with periodic pings:
+
+```javascript
+// Ping every 3 minutes
+const HEARTBEAT_INTERVAL = 3 * 60 * 1000;
+
+const heartbeat = setInterval(() => {
+  fetch('/api/presence-ping', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ state: 'online' })
+  });
+}, HEARTBEAT_INTERVAL);
+
+// Clear on unmount/logout
+return () => clearInterval(heartbeat);
+```
+
+### On Visibility Change
+
+Update presence when browser tab visibility changes:
+
+```javascript
+document.addEventListener('visibilitychange', () => {
+  const state = document.hidden ? 'offline' : 'online';
+  
+  fetch('/api/presence-ping', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ state })
+  });
+});
+```
+
+## Best Practices
+
+1. **Heartbeat Frequency:** Send presence pings every 2-5 minutes for active users
+2. **On Logout:** Always mark user as offline when they explicitly log out
+3. **Error Handling:** Silently fail on presence update errors; don't block user workflows
+4. **Battery Consideration:** Reduce ping frequency on mobile devices to conserve battery
+5. **Stale Detection:** Consider users offline if `ultimo_acceso` is older than 10-15 minutes
+6. **Network Resilience:** Queue failed presence updates and retry when connection is restored
+
+## Environment Variables
+
+Required environment variables:
+
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Public anonymous key  
+- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SERVICE_KEY` - Admin service key
+
+## Related Endpoints
+
+- [Authentication](/api/authentication) - How to obtain access tokens
+- [API Overview](/api/overview) - General API concepts and error codes

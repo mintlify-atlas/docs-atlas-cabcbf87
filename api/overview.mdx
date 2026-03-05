@@ -1,0 +1,125 @@
+---
+title: 'API Overview'
+description: 'Introduction to the Hive project management platform API'
+---
+
+## Introduction
+
+The Hive API provides programmatic access to the Hive project management platform. Built on top of Supabase authentication and database services, the API enables you to manage users, track presence, and integrate Hive functionality into your applications.
+
+## Base URL
+
+The API is hosted as Vercel serverless functions:
+
+```
+https://your-domain.vercel.app/api
+```
+
+All API endpoints are accessed relative to this base URL.
+
+## Authentication
+
+The Hive API uses Bearer token authentication powered by Supabase Auth. All API requests require an `Authorization` header:
+
+```bash
+Authorization: Bearer <your_access_token>
+```
+
+Tokens are obtained through Supabase authentication flows. See the [Authentication](/api/authentication) page for detailed information.
+
+## Available Endpoints
+
+The Hive API currently provides the following endpoints:
+
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/api/auth-sync` | POST | Sync Supabase Auth user credentials with usuarios table | Yes (Admin) |
+| `/api/presence-ping` | POST | Update user online/offline presence status | Yes |
+
+## Rate Limiting
+
+Rate limiting is enforced at the Vercel platform level. Default limits apply:
+
+- **Hobby tier**: 100 requests per 10 seconds
+- **Pro tier**: 600 requests per 10 seconds
+- **Enterprise tier**: Custom limits
+
+Exceeding rate limits will return a `429 Too Many Requests` response.
+
+## Common Error Codes
+
+All API responses use standard HTTP status codes:
+
+| Status Code | Description |
+|-------------|-------------|
+| `200` | Success - Request completed successfully |
+| `400` | Bad Request - Invalid parameters or malformed request |
+| `401` | Unauthorized - Missing or invalid authentication token |
+| `403` | Forbidden - Valid token but insufficient permissions |
+| `404` | Not Found - Requested resource does not exist |
+| `405` | Method Not Allowed - HTTP method not supported for this endpoint |
+| `409` | Conflict - Resource already exists (duplicate username/email) |
+| `500` | Internal Server Error - Server-side error occurred |
+
+### Error Response Format
+
+All errors return JSON with the following structure:
+
+```json
+{
+  "message": "Human-readable error description",
+  "error": "Technical error details (when available)",
+  "details": "Additional context (optional)"
+}
+```
+
+For conflict errors (409), an additional `error` code may be provided:
+
+```json
+{
+  "error": "USERNAME_EXISTS",
+  "message": "El nombre de usuario ya está en uso"
+}
+```
+
+## API Versioning
+
+The Hive API is currently in version 1.0. The API does not use URL-based versioning at this time. Breaking changes will be communicated in advance through release notes.
+
+## Environment Requirements
+
+All API endpoints require the following environment variables to be configured:
+
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anonymous/public key
+- `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SERVICE_KEY` - Supabase service role key (server-side only)
+
+Missing environment variables will result in a `500` error with details about which variables are missing.
+
+## Response Format
+
+All successful API responses return JSON with an `ok: true` field and relevant data:
+
+```json
+{
+  "ok": true,
+  "user": { /* user data */ },
+  "auth": { /* auth data */ }
+}
+```
+
+## Getting Started
+
+1. Set up [authentication](/api/authentication) with Supabase
+2. Obtain an access token for your user
+3. Make API requests with the Bearer token in the Authorization header
+4. Review individual endpoint documentation for request/response schemas
+
+## Support
+
+For API support and questions:
+
+- Review endpoint-specific documentation
+- Check the [Authentication guide](/api/authentication)
+- Verify your environment variables are correctly configured
+- Ensure your access token is valid and not expired

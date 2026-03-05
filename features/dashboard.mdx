@@ -1,0 +1,313 @@
+---
+title: "Dashboard"
+description: "View analytics, manage tags, and oversee your team's work in Hive"
+---
+
+# Dashboard
+
+The Dashboard is your central hub for analytics, configuration, and administrative tasks in Hive. It provides visual insights into team workload, project progress, and system management.
+
+## Overview
+
+The Dashboard combines several key sections:
+
+<CardGroup cols={3}>
+  <Card title="Tag Management" icon="tags">
+    Create and organize labels for categorizing tasks
+  </Card>
+  <Card title="Workload Analytics" icon="chart-bar">
+    Visualize task distribution across team members
+  </Card>
+  <Card title="Project Progress" icon="chart-line">
+    Track completion status of all projects
+  </Card>
+  <Card title="User Management" icon="users-gear">
+    Add, edit, and remove team members (Admin only)
+  </Card>
+</CardGroup>
+
+## Tag Configuration
+
+### Viewing Tags
+
+The **Configuración de Etiquetas** section displays all existing tags in a grid layout. Each tag shows:
+- Tag name
+- Color badge
+- Description (if provided)
+- Edit button
+
+### Creating New Tags
+
+1. Click **Crear Etiqueta** in the tags section header
+2. Fill in the tag details:
+   - **Nombre** (Name) - Clear, descriptive label
+   - **Color** - Choose from color picker
+   - **Descripción** (Description) - Optional context
+3. Click **Crear Etiqueta** to save
+
+Tags appear immediately and are available for use on any task.
+
+<Tip>
+Use descriptive tag names like "Frontend", "Bug", "Client Work" rather than vague labels. This makes filtering and reporting much more useful.
+</Tip>
+
+### Editing Tags
+
+1. Click the tag card or edit icon
+2. Modify name, color, or description
+3. Click **Actualizar Etiqueta** to save changes
+
+All tasks using this tag will reflect the updated color immediately.
+
+### Deleting Tags
+
+<Warning>
+Deleting a tag removes it from all tasks where it was applied. This action cannot be undone.
+</Warning>
+
+To delete a tag:
+1. Open the tag edit modal
+2. Click **Eliminar Etiqueta** (red button)
+3. Confirm deletion
+
+## Workload Analytics
+
+### Workload Chart
+
+The **Carga de Trabajo por Empleado** (Workload by Employee) chart visualizes task distribution:
+
+#### Chart Features
+- **Chart Type**: Horizontal bar chart powered by Chart.js
+- **Data Shown**: Number of assigned tasks per team member
+- **Total Badge**: Displays total tasks across all users
+- **Interactive**: Hover over bars to see exact task counts
+- **Theme Support**: Automatically adapts colors for dark mode
+
+#### What the Chart Shows
+
+<Card title="Task Count per User" icon="chart-simple">
+Each horizontal bar represents one team member. The length of the bar indicates their total number of assigned tasks, regardless of completion status.
+</Card>
+
+### Interpreting Workload Data
+
+- **Long bars**: Users with many assigned tasks (may be overloaded)
+- **Short bars**: Users with fewer tasks (capacity for more work)
+- **Empty bars**: Users with no current assignments
+
+Use this data to:
+- Balance workload across the team
+- Identify who has capacity for urgent work
+- Plan resource allocation for new projects
+- Recognize high performers managing many tasks
+
+<Tip>
+The workload chart updates in real-time as tasks are created, reassigned, or completed. No manual refresh needed.
+</Tip>
+
+## Project Progress Tracking
+
+### Progress Chart
+
+The **Progreso de Proyectos** (Project Progress) section shows completion status:
+
+#### Progress Visualization
+
+For each project, you'll see:
+- Project name
+- Progress bar showing completion percentage
+- Completion statistics (X of Y tasks completed)
+- Visual progress indicator
+
+#### Progress List
+
+The `dashboardProjectsProgressList` displays:
+- All active and inactive projects
+- Individual project progress bars
+- Task completion ratios
+- Color-coded status indicators
+
+<CardGroup cols={2}>
+  <Card title="Completion Calculation" icon="calculator">
+    Progress is calculated as: (Completed Tasks / Total Tasks) × 100%
+    
+    Tasks marked as 100% complete count toward the numerator.
+  </Card>
+  <Card title="Empty Projects" icon="folder-open">
+    Projects with no tasks show 0% progress. Add tasks to begin tracking.
+  </Card>
+</CardGroup>
+
+### Using Progress Data
+
+- **Identify stalled projects**: Projects at 0% or not progressing
+- **Celebrate wins**: Projects nearing 100% completion
+- **Resource planning**: Allocate help to struggling projects
+- **Reporting**: Export progress for stakeholder updates
+
+## User Management
+
+<Warning>
+User Management features are only available to **Administrator** role users.
+</Warning>
+
+### User Table
+
+The **Gestión de Usuarios** table shows:
+
+| Column | Description |
+|--------|-------------|
+| **Usuario** | Username and full name |
+| **Antigüedad** | Account age / registration date |
+| **Rol** | Administrator or Collaborator |
+| **Puesto** | Job title/position |
+| **Acciones** | Edit and Delete buttons |
+
+### Creating Users
+
+See the [People documentation](/features/people) for detailed user creation instructions.
+
+Quick steps:
+1. Click **Nuevo Usuario** button
+2. Fill in personal and account information
+3. Set role and password
+4. Optionally upload profile photo
+5. Click **Crear Usuario**
+
+### Managing Existing Users
+
+#### Editing Users
+- Click the **Edit** icon in the Actions column
+- Modify any user information
+- Change roles (Administrator ↔ Collaborator)
+- Reset passwords if needed
+- Update profile photos
+
+#### Deleting Users
+- Click the **Delete** icon in the Actions column
+- Confirm deletion
+- User account and authentication are removed
+- Reassign their tasks before deletion
+
+## Chart Customization
+
+### Theme Integration
+
+Dashboard charts automatically respond to theme changes:
+
+- **Light Mode**: Charts use bright, high-contrast colors
+- **Dark Mode**: Charts adapt to dark-friendly palettes
+- **Legend Colors**: Update to match theme
+- **No Manual Refresh**: Charts rebuild automatically on theme toggle
+
+### Chart.js Features
+
+Hive uses Chart.js for all visualizations, providing:
+- Responsive sizing (adapts to screen width)
+- Interactive tooltips on hover
+- Smooth animations
+- Accessibility support
+- Export capabilities (via browser right-click)
+
+<Tip>
+To save a chart image, right-click the chart and select "Save Image As" from your browser menu.
+</Tip>
+
+## Dashboard Best Practices
+
+<AccordionGroup>
+  <Accordion title="How often should I review the Dashboard?">
+    Check the Dashboard at least weekly to:
+    - Monitor workload distribution
+    - Track project progress
+    - Identify bottlenecks early
+    - Rebalance team assignments
+    
+    Daily reviews are helpful during busy periods or project launches.
+  </Accordion>
+
+  <Accordion title="What's the ideal workload per person?">
+    This varies by role and task complexity. As a general guideline:
+    - 3-5 active tasks per person is typical
+    - More than 10 tasks may indicate overload
+    - Consider task size when evaluating counts
+    
+    Focus on balanced distribution rather than absolute numbers.
+  </Accordion>
+
+  <Accordion title="Should I create tags before or after tasks?">
+    Create a core set of tags first (e.g., "Bug", "Feature", "Frontend", "Backend"). Add new tags as specific needs arise. Avoid creating too many similar tags.
+  </Accordion>
+
+  <Accordion title="Can I export Dashboard data?">
+    Currently, Hive doesn't have a built-in export feature. You can:
+    - Take screenshots of charts
+    - Right-click charts to save as images  
+    - Manually compile data from the UI
+    
+    Consider building custom reports if you need regular exports.
+  </Accordion>
+
+  <Accordion title="What's the difference between tags in Dashboard vs. other views?">
+    Tags created in the Dashboard are **global**—they're available everywhere in Hive. You can apply Dashboard-created tags to any task in Tasks, Projects, or Calendar views.
+  </Accordion>
+</AccordionGroup>
+
+## Date Range Filtering
+
+<Card title="Coming Soon" icon="calendar-range">
+Date range filtering for Dashboard analytics is not currently available but is a common feature request. Currently, the Dashboard shows all-time data.
+</Card>
+
+## Exporting and Reporting
+
+### Current Capabilities
+
+**Available**:
+- Screenshot charts using browser tools
+- Right-click → Save image for chart exports
+- Copy data manually from UI tables
+- View real-time data updates
+
+**Not Available**:
+- CSV/Excel export
+- PDF report generation
+- Scheduled reports
+- Email digests
+
+<Tip>
+For regular reporting needs, consider building a custom integration using the Supabase backend directly to query data programmatically.
+</Tip>
+
+## Performance and Loading
+
+### Chart Loading
+
+- Charts may show "Cargando..." (Loading) briefly while data fetches
+- Workload chart depends on task and user data loading
+- Real-time updates occur automatically via Supabase subscriptions
+- No manual refresh needed—changes appear within seconds
+
+### Troubleshooting
+
+If charts don't appear:
+1. Refresh the page (Ctrl+R or Cmd+R)
+2. Check that you're logged in with proper permissions
+3. Verify that Chart.js library loaded (check browser console)
+4. Ensure you have at least one project/task to visualize
+
+---
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Projects" icon="folder-tree" href="/features/projects">
+    Manage projects tracked in progress charts
+  </Card>
+  <Card title="People" icon="users" href="/features/people">
+    Detailed user management documentation
+  </Card>
+  <Card title="Tasks" icon="list-check" href="/features/tasks">
+    Learn how tags are applied to tasks
+  </Card>
+</CardGroup>

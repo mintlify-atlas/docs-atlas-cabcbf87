@@ -1,0 +1,257 @@
+---
+title: "People"
+description: "Manage team members, roles, and permissions in Hive"
+---
+
+# People
+
+The People module in Hive helps you manage your team members, assign roles, and track individual workloads.
+
+## User Roles
+
+Hive has two primary user roles:
+
+<CardGroup cols={2}>
+  <Card title="Administrator" icon="user-crown">
+    Full system access including:
+    - Creating and deleting users
+    - Managing all projects and tasks
+    - Configuring tags and settings
+    - Viewing analytics and reports
+  </Card>
+  <Card title="Collaborator" icon="user">
+    Standard user access including:
+    - Viewing assigned tasks
+    - Updating task progress
+    - Viewing team projects
+    - Editing own profile
+  </Card>
+</CardGroup>
+
+<Warning>
+Only administrators can create new users, modify roles, and delete users from the system.
+</Warning>
+
+## Adding New Users
+
+### Creating a User Account (Admin Only)
+
+1. Navigate to the **Dashboard** screen
+2. Scroll to **Gestión de Usuarios** (User Management)
+3. Click **Nuevo Usuario** button
+4. Fill in the required information:
+
+#### Personal Information
+- **Nombre Completo** (Full Name)
+- **Puesto** (Position/Job Title)
+- **Cédula** (ID Number - for Panamanian ID)
+
+#### User Account Information
+- **Nombre de Usuario** (Username) - must be unique
+- **Correo Electrónico** (Email) - must be unique
+- **Rol** (Role) - Administrator or Collaborator
+- **Contraseña** (Password)
+- **Repetir Contraseña** (Confirm Password)
+
+#### Profile Photo (Optional)
+- Upload a profile image
+- Preview before saving
+- Remove or replace as needed
+
+<Tip>
+If no profile photo is uploaded, Hive automatically generates an avatar with the user's initials in a color based on their name.
+</Tip>
+
+### Password Requirements
+
+When creating user accounts:
+- Passwords must match in both fields
+- There is no minimum length enforced, but recommend at least 8 characters
+- Users can change their password after first login
+
+## User Profile Management
+
+### Viewing Your Profile
+
+1. Click on your avatar in the sidebar footer
+2. Select **Perfil** from the dropdown, or click the sidebar Profile link
+3. Your profile screen displays all account information
+
+### Editing Your Profile
+
+All users can edit their own profile:
+
+1. Go to **Perfil** screen
+2. Update any editable fields:
+   - Full name
+   - Email address
+   - Username
+   - Position/title
+   - ID number (Cédula)
+   - Profile photo
+   - Password (leave blank to keep current password)
+
+3. Click **Guardar** to save changes
+
+<Warning>
+**Role** field is read-only in your profile. Only administrators can change user roles from the Dashboard.
+</Warning>
+
+### Profile Photos
+
+To change your profile photo:
+
+1. Click the **edit icon** overlay on your avatar
+2. Select a new image file (JPEG, PNG, GIF, WebP supported)
+3. Preview the image
+4. Click **Subir imagen** to save
+
+Photo specifications:
+- Recommended: Square images work best
+- Supported formats: JPEG, PNG, GIF, WebP
+- Images are stored in Supabase storage
+
+## People Board
+
+The People Board shows your team organized by individual:
+
+### Viewing the People Board
+
+1. Navigate to **Personas** (People) in the sidebar
+2. Each team member appears in a column
+3. Their assigned tasks are listed under their profile
+
+### What's Displayed
+
+For each team member, you'll see:
+- Profile photo or generated initials avatar
+- Full name and position
+- Online/offline presence indicator (if available)
+- List of assigned tasks with:
+  - Task title
+  - Project name
+  - Due date
+  - Priority
+  - Progress percentage
+
+### Filtering People
+
+Use the search bar to filter:
+- By person name
+- By task title
+- By project name
+- By any text in task descriptions
+
+<Tip>
+The People Board is excellent for understanding individual workloads and identifying who might be overloaded or available for new work.
+</Tip>
+
+## User Management (Administrators)
+
+### Viewing All Users
+
+From the Dashboard → **Gestión de Usuarios**:
+
+- View all registered users in a table
+- See username, registration date, role, and position
+- Check account age ("Antigüedad")
+- Access edit and delete actions
+
+### Editing User Accounts
+
+1. Click the **Edit** icon next to any user in the table
+2. Modify any field except the user ID
+3. Change role between Administrator and Collaborator
+4. Update passwords if needed
+5. Click **Actualizar Usuario** to save
+
+### Deleting Users
+
+<Warning>
+Deleting a user is permanent. Their account and authentication credentials will be removed, but their task history may be preserved.
+</Warning>
+
+To delete a user:
+
+1. From the Dashboard user table, click **Delete** icon
+2. Confirm the deletion
+3. The user will be immediately logged out if currently signed in
+
+## User Presence
+
+Hive tracks basic user presence:
+
+- **Last Access**: When the user last logged in
+- **Online Indicators**: May show green dot for currently active users
+- **Registration Date**: When the account was created
+
+Presence information helps teams understand availability and activity levels.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="How many administrators should we have?">
+    Have at least 2 administrators to prevent lockouts, but limit the number to maintain security. Most teams need only 2-4 admins regardless of size.
+  </Accordion>
+
+  <Accordion title="Should I use real names or nicknames for usernames?">
+    Use consistent naming conventions. Real names (like "juan.perez") are clearer for larger teams, while nicknames work fine for small, close-knit groups.
+  </Accordion>
+
+  <Accordion title="What happens to tasks when I delete a user?">
+    Tasks assigned to deleted users remain in the system. You'll need to reassign those tasks to active team members. Check the user's workload before deletion.
+  </Accordion>
+
+  <Accordion title="Can users change their own role?">
+    No. Only administrators can change user roles. This prevents privilege escalation and maintains proper access control.
+  </Accordion>
+
+  <Accordion title="How do I handle offboarding?">
+    Before deleting a departing user: (1) Reassign their tasks, (2) Document their project knowledge, (3) Remove them from upcoming assignments, then (4) delete their account.
+  </Accordion>
+</AccordionGroup>
+
+## Security and Permissions
+
+### Administrator Privileges
+
+Administrators have exclusive access to:
+- Creating new users and projects
+- Deleting users, projects, and tasks
+- Managing system tags and labels
+- Viewing all analytics and reports
+- Editing any user's profile (except changing another admin's role)
+
+### Collaborator Limitations
+
+Collaborators cannot:
+- Create or delete users
+- Delete projects
+- Access user management functions
+- Edit other users' profiles
+- Create system-wide tags (admin-created tags only)
+
+### Self-Service Features
+
+All users can:
+- Edit their own profile and password
+- Update progress on assigned tasks
+- View all projects and tasks (visibility is not restricted)
+- Search and filter across the platform
+
+<Tip>
+Encourage users to keep their profiles updated with current position and contact information. This helps teams stay connected.
+</Tip>
+
+---
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Tasks" icon="list-check" href="/features/tasks">
+    Learn how to assign tasks to team members
+  </Card>
+  <Card title="Dashboard" icon="gauge" href="/features/dashboard">
+    View workload analytics and user management
+  </Card>
+</CardGroup>
