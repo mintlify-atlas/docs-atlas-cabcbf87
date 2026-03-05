@@ -1,0 +1,90 @@
+{
+  "projectType": "saas",
+  "projectName": "Hive",
+  "projectDescription": "A collaborative project management platform for teams to organize projects, tasks, and team members with real-time updates.",
+  "theme": "almond",
+  "primaryColor": "#1c9a54",
+  "lightColor": "#ba935f",
+  "darkColor": "#10100e",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/projects",
+              "features/tasks",
+              "features/people",
+              "features/dashboard",
+              "features/calendar"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/authentication",
+              "guides/profile-management",
+              "guides/collaboration",
+              "guides/notifications"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment",
+              "configuration/supabase",
+              "configuration/deployment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/auth-sync",
+              "api/presence-ping"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Project Management",
+    "Task Tracking",
+    "Team Collaboration",
+    "Real-time Updates",
+    "Dashboard Analytics",
+    "Calendar View",
+    "User Profiles",
+    "Role-based Access Control"
+  ],
+  "publicApiSurface": [
+    "/api/auth-sync - Sync authentication and user data",
+    "/api/presence-ping - Real-time presence tracking",
+    "navigateTo() - Client-side navigation",
+    "handleLogin() - User authentication",
+    "handleLogout() - User logout",
+    "Supabase Client - Database and authentication operations"
+  ]
+}
